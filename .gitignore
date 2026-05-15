@@ -27,6 +27,14 @@ ENV/
 env/
 .env
 
+# Cursor
+.cursor/
+.cursor/rules/
+.cursor/plans/
+cursor/
+.cursorrc
+deep-teach/
+
 # IDE
 .idea/
 .vscode/
