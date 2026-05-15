@@ -18,11 +18,11 @@
 ### 1.1 项目初始化
 
 - [x] ~~创建 Git 仓库~~
-- [x] ~~创建项目目录结构~~（待完善）
-- [x] ~~配置 requirements.txt~~（待创建）
-- [x] ~~配置 .env.example~~（待创建）
-- [x] ~~配置 .gitignore~~（待创建）
-- [x] ~~创建 README.md~~（待创建）
+- [x] ~~创建项目目录结构~~
+- [x] ~~配置 requirements.txt~~
+- [x] ~~配置 .env.example~~
+- [x] ~~配置 .gitignore~~
+- [x] ~~创建 README.md~~
 
 ### 1.2 配置与基础设施
 
