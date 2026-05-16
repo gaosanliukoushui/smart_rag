@@ -3,6 +3,8 @@
 from pathlib import Path
 from typing import Dict, Any
 
+from app.parsers.base import BaseParser
+
 
 class TextParser(BaseParser):
     """Parser for plain text documents."""

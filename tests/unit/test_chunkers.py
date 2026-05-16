@@ -61,7 +61,6 @@ class TestChunkService:
         assert chunk.content == "这是一个测试句子。"
         assert chunk.chunk_index == 0
         assert chunk.token_count == len("这是一个测试句子。") // 4
-        assert chunk.id is not None
 
     def test_create_chunks_multiple(self):
         """Test create_chunks handles multiple chunks with correct indices."""

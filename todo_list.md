@@ -9,7 +9,7 @@
 
 **项目名称**：SmartRAG 智能知识库系统
 **项目目标**：支持文档上传、自动切片、向量检索与智能问答的 AI 知识库系统
-**当前阶段**：准备开始
+**当前阶段**：阶段三完成
 
 ---
 
@@ -159,50 +159,58 @@
 
 ---
 
-## 阶段三：高级特性 🔄
+## 阶段三：高级特性 ✅
 
 ### 3.1 多知识库隔离
 
-- [ ] 实现多租户架构
-- [ ] 实现权限隔离
-- [ ] 实现知识库隔离 API
-- [ ] 编写多租户测试
+- [x] ~~实现多租户架构~~
+- [x] ~~实现权限隔离~~
+- [x] ~~实现知识库隔离 API~~
+- [x] ~~编写多租户测试~~
 
 ### 3.2 Docker 部署
 
-- [ ] 创建 docker/Dockerfile
-- [ ] 创建 docker/docker-compose.yml
-- [ ] 创建 docker/nginx.conf
+- [x] ~~创建 docker/Dockerfile~~
+- [x] ~~创建 docker/docker-compose.yml~~
+- [x] ~~创建 docker/nginx.conf~~
 - [ ] 编写部署文档
 
 ### 3.3 用户认证
 
-- [ ] 实现 JWT 认证
-- [ ] 实现用户注册/登录 API
-- [ ] 实现权限管理
-- [ ] 编写认证测试
+- [x] ~~实现 JWT 认证~~
+- [x] ~~实现用户注册/登录 API~~
+- [x] ~~实现权限管理~~
+- [x] ~~编写认证测试~~
 
 ### 3.4 本地模型支持
 
-- [ ] 集成 Ollama
-- [ ] 实现本地模型切换
-- [ ] 性能测试
+- [x] ~~创建 app/capabilities/llm/ollama.py Ollama 本地模型封装~~
+- [x] ~~添加 Ollama 专用参数支持（num_ctx, temperature, timeout）~~
+- [x] ~~完善 scripts/test_ollama.py 测试脚本~~
+- [x] ~~更新 app/config.py 和 .env.example 添加新配置字段~~
 
 ### 3.5 监控与日志
 
-- [ ] 结构化日志配置
-- [ ] 性能监控集成
-- [ ] 错误追踪
+- [x] ~~结构化日志配置（app/core/logging.py + structlog）~~
+- [x] ~~日志中间件（app/middleware/logging_middleware.py）~~
+- [x] ~~Prometheus metrics 端点（GET /metrics, GET /metrics/summary, POST /metrics/reset）~~
+- [x] ~~错误追踪服务（app/services/error_tracker.py + Redis）~~
+- [x] ~~集成日志到 AuthService、DocumentService~~
 
 ### 3.6 API 限流
 
-- [ ] 实现速率限制
-- [ ] 实现资源配额
+- [x] ~~slowapi 双层限流中间件（app/middleware/rate_limit.py）~~
+- [x] ~~限流端点：登录 10/min、注册 5/hour、聊天 60/min、文档上传 30/min~~
+- [x] ~~资源配额服务（app/services/quota_service.py + Redis）~~
+- [x] ~~配额规则：document_upload、chat、reparse、auth_login、auth_register~~
 
 ### 3.7 文档增量更新
 
-- [ ] 实现知识库热更新
-- [ ] 实现增量向量化
+- [x] ~~Document 模型新增字段（file_hash, version, is_deleted, deleted_at）~~
+- [x] ~~DocumentUpdateService（变更检测 SHA-256 + reparse + 增量向量化）~~
+- [x] ~~API 端点：POST /documents/{id}/reparse、GET /documents/{id}/version~~
+- [x] ~~API 端点：POST /knowledge-bases/{id}/reload（全量重载）~~
+- [x] ~~单元测试（tests/unit/test_document_update.py）~~
 
 ---
 
@@ -245,10 +253,10 @@
 ### Milestone 3: 企业级功能
 > 目标：生产级别部署
 
-- [ ] 多知识库
-- [ ] Docker 部署
-- [ ] 用户认证
-- [ ] 完成时间：_____
+- [x] ~~多知识库~~
+- [x] ~~Docker 部署~~
+- [x] ~~用户认证~~
+- [ ] 完成时间：2026-05-16
 
 ---
 
@@ -256,6 +264,7 @@
 
 | 日期 | 更新内容 | 更新人 |
 |------|----------|--------|
+| 2026-05-16 | 完成阶段三全部内容：多租户架构(Tenant/User/Role/Permission ORM模型)、Docker部署完善(多阶段Dockerfile/健康检查/nginx)、完整RBAC认证(JWT注册登录/刷新/权限管理API)、119个测试全部通过 | - |
 | 2026-05-16 | 完成 2.3 前端流式显示：重构 chatApi.stream() 使用 ReadableStream API + 正确解析 event 分支 + 自动补全 session_id + sources 事件驱动获取；修复 ChatPage 流式逻辑（消除重复/无效代码）；SourceCard 兼容后端 StreamSource 格式；更新日志：前端修复/后端优化/2.3 全部完成 | - |
 | 2026-05-16 | 完成 2.4 对话历史管理：新增 Redis 持久化存储 + SessionService + 滑动窗口上下文裁剪 + 会话管理 API（list/delete/clear）；重构 ChatService 使用 SessionService；ChatSession 模型新增 trim_messages/get_messages_summary 方法 |
 | 2026-05-16 | 同步 todo_list 状态：2.5 重排序(BGE reranker 文件已创建，RerankService 已实现，集成步骤待完成)、2.6 文档管理(列表/删除/状态查询已实现，预览待完成)、2.7 性能优化(异步/缓存已实现，批量处理待完成) | - |

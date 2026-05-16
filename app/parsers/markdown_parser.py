@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Dict, Any
 import re
 
+from app.parsers.base import BaseParser
+
 
 class MarkdownParser(BaseParser):
     """Parser for Markdown documents."""
@@ -50,8 +52,10 @@ class MarkdownParser(BaseParser):
         metadata["lines"] = len(lines)
         metadata["word_count"] = len(content.split())
 
-        title_match = re.match(r"^#\s+(.+)$", content)
-        if title_match:
-            metadata["title"] = title_match.group(1)
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("# "):
+                metadata["title"] = stripped[2:].strip()
+                break
 
         return metadata

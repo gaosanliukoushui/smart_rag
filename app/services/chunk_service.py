@@ -1,7 +1,9 @@
 """Chunk service for document chunking operations."""
 
 from typing import List
-from app.models.chunk import Chunk
+from uuid import UUID, uuid4
+
+from app.models.knowledge_base import Chunk
 
 
 class ChunkService:
@@ -39,10 +41,10 @@ class ChunkService:
 
         return [c for c in chunks if c]
 
-    def create_chunks(self, document_id: str, text: str) -> List[Chunk]:
-        """Create chunk objects from text."""
+    def create_chunks(self, document_id: UUID, text: str) -> List[Chunk]:
+        """Create ORM Chunk objects from text."""
         chunk_texts = self.chunk_text(text)
-        chunks = []
+        result = []
 
         for i, content in enumerate(chunk_texts):
             chunk = Chunk(
@@ -51,9 +53,9 @@ class ChunkService:
                 chunk_index=i,
                 token_count=len(content) // 4,
             )
-            chunks.append(chunk)
+            result.append(chunk)
 
-        return chunks
+        return result
 
     def estimate_token_count(self, text: str) -> int:
         """Estimate token count for text (rough estimate)."""

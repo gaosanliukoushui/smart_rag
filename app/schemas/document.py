@@ -2,20 +2,21 @@
 
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 from pydantic import BaseModel, Field
 
 
 class DocumentUploadRequest(BaseModel):
     """Request schema for document upload."""
 
-    knowledge_base_id: str
+    knowledge_base_id: UUID
     title: Optional[str] = None
 
 
 class DocumentUploadResponse(BaseModel):
     """Response schema for document upload."""
 
-    document_id: str
+    document_id: UUID
     filename: str
     status: str
     message: str
@@ -31,21 +32,25 @@ class DocumentListResponse(BaseModel):
 class DocumentResponse(BaseModel):
     """Document response schema."""
 
-    id: str
+    id: UUID
     title: str
     file_type: str
     file_size: int
     status: str
     chunk_count: int
+    knowledge_base_id: UUID
     created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class ChunkResponse(BaseModel):
     """Chunk response schema."""
 
-    id: str
+    id: UUID
     content: str
     chunk_index: int
+    token_count: int
     metadata: dict
 
 
@@ -59,7 +64,7 @@ class ChunkListResponse(BaseModel):
 class DocumentPreviewResponse(BaseModel):
     """Response schema for document preview."""
 
-    document_id: str
+    document_id: UUID
     title: str
     content: str
     truncated: bool

@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api/v1"
 
+    JWT_SECRET_KEY: str = ""
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/smartrag"
     REDIS_URL: str = "redis://localhost:6379/0"
 
@@ -41,6 +45,13 @@ class Settings(BaseSettings):
 
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"
+    OLLAMA_NUM_CTX: int = 4096
+    OLLAMA_TEMPERATURE: float = 0.7
+    OLLAMA_TIMEOUT: int = 120
+
+    ENVIRONMENT: str = "development"
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "console"
 
     EMBEDDING_MODEL: str = "BAAI/bge-m3"
     EMBEDDING_DEVICE: str = "cpu"
@@ -64,3 +75,6 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
+
+
+settings = get_settings()
