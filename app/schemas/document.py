@@ -56,5 +56,17 @@ class ChunkListResponse(BaseModel):
     total: int
 
 
+class DocumentPreviewResponse(BaseModel):
+    """Response schema for document preview."""
+
+    document_id: str
+    title: str
+    content: str
+    truncated: bool
+    total_chars: int
+    file_type: str
+    metadata: dict
+
+
 DocumentUploadResponse.model_rebuild()
 DocumentListResponse.model_rebuild()

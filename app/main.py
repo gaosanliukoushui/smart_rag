@@ -1,11 +1,14 @@
 """FastAPI application entry point."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.api.v1 import health
+from app.api.v1 import document, health, knowledge_base, chat
+from app.api.v1 import session as session_router
 from app.config import settings
 
 
@@ -31,6 +34,15 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
+app.include_router(document.router, prefix=settings.API_V1_PREFIX, tags=["Documents"])
+app.include_router(knowledge_base.router, prefix=settings.API_V1_PREFIX, tags=["KnowledgeBase"])
+app.include_router(chat.router, prefix=settings.API_V1_PREFIX, tags=["Chat"])
+app.include_router(session_router.router, prefix=settings.API_V1_PREFIX, tags=["Sessions"])
+
+# Serve frontend static files (Vite build output)
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 
 
 @app.get("/")

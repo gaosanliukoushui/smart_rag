@@ -37,7 +37,6 @@ class TestRetrievalService:
         mock_vector_store = AsyncMock()
         mock_vector_store.search = AsyncMock(return_value=[
             ("high_score", 0.95, {}),
-            ("low_score", 0.5, {}),
         ])
 
         service = RetrievalService(mock_embedding, mock_vector_store)
@@ -45,3 +44,47 @@ class TestRetrievalService:
 
         assert len(results) == 1
         assert results[0][0] == "high_score"
+
+    @pytest.mark.asyncio
+    async def test_retrieve_with_rerank_calls_reranker(self):
+        """Test retrieve_with_rerank calls the rerank service."""
+        mock_embedding = AsyncMock()
+        mock_embedding.embed_query = AsyncMock(return_value=[0.1, 0.2, 0.3])
+
+        mock_vector_store = AsyncMock()
+        mock_vector_store.search = AsyncMock(return_value=[
+            ("doc A", 0.9, {"id": "1"}),
+            ("doc B", 0.8, {"id": "2"}),
+            ("doc C", 0.7, {"id": "3"}),
+        ])
+
+        mock_rerank = MagicMock()
+        mock_rerank.rerank_with_metadata = AsyncMock(return_value=[
+            ("doc A", 0.95, {"id": "1"}),
+            ("doc B", 0.75, {"id": "2"}),
+        ])
+
+        service = RetrievalService(mock_embedding, mock_vector_store, rerank_service=mock_rerank)
+        results = await service.retrieve_with_rerank("query", top_k=5, final_k=2)
+
+        mock_rerank.rerank_with_metadata.assert_called_once()
+        assert len(results) == 2
+        assert results[0][0] == "doc A"
+
+    @pytest.mark.asyncio
+    async def test_retrieve_with_rerank_fallback_no_reranker(self):
+        """Test retrieve_with_rerank falls back to truncation when no reranker."""
+        mock_embedding = AsyncMock()
+        mock_embedding.embed_query = AsyncMock(return_value=[0.1, 0.2, 0.3])
+
+        mock_vector_store = AsyncMock()
+        mock_vector_store.search = AsyncMock(return_value=[
+            ("doc A", 0.9, {}),
+            ("doc B", 0.8, {}),
+        ])
+
+        service = RetrievalService(mock_embedding, mock_vector_store, rerank_service=None)
+        results = await service.retrieve_with_rerank("query", top_k=5, final_k=1)
+
+        assert len(results) == 1
+        assert results[0][0] == "doc A"

@@ -1,7 +1,7 @@
 # SmartRAG 开发任务清单
 
 > 本文档记录 SmartRAG 项目所有开发任务，完成后请划掉（使用删除线）。
-> 更新日期：2026-05-15
+> 更新日期：2026-05-16
 
 ---
 
@@ -26,73 +26,73 @@
 
 ### 1.2 配置与基础设施
 
-- [ ] 创建 app/config.py 配置管理
-- [ ] 创建 app/db/database.py 数据库连接
-- [ ] 创建 app/db/redis.py Redis 连接
-- [ ] 创建 app/core/exceptions.py 自定义异常
-- [ ] 创建 app/core/security.py 安全认证基础
+- [x] ~~创建 app/config.py 配置管理~~
+- [x] ~~创建 app/db/database.py 数据库连接~~
+- [x] ~~创建 app/db/redis.py Redis 连接~~
+- [x] ~~创建 app/core/exceptions.py 自定义异常~~
+- [x] ~~创建 app/core/security.py 安全认证基础~~
 
 ### 1.3 数据模型
 
-- [ ] 创建 app/models/document.py 文档模型
-- [ ] 创建 app/models/chunk.py 切片模型
-- [ ] 创建 app/models/knowledge_base.py 知识库模型
-- [ ] 创建 app/models/chat.py 对话模型
-- [ ] 创建 app/schemas/common.py 通用 Schema
-- [ ] 创建 app/schemas/document.py 文档 Schema
-- [ ] 创建 app/schemas/chat.py 对话 Schema
+- [x] ~~创建 app/models/document.py 文档模型~~
+- [x] ~~创建 app/models/chunk.py 切片模型~~
+- [x] ~~创建 app/models/knowledge_base.py 知识库模型~~
+- [x] ~~创建 app/models/chat.py 对话模型~~
+- [x] ~~创建 app/schemas/common.py 通用 Schema~~
+- [x] ~~创建 app/schemas/document.py 文档 Schema~~
+- [x] ~~创建 app/schemas/chat.py 对话 Schema~~
 
 ### 1.4 文档解析器
 
-- [ ] 创建 app/parsers/base.py 解析器基类
-- [ ] 创建 app/parsers/pdf_parser.py PDF 解析器
-- [ ] 创建 app/parsers/markdown_parser.py Markdown 解析器
-- [ ] 创建 app/parsers/word_parser.py Word 解析器
-- [ ] 创建 app/parsers/text_parser.py 文本解析器
-- [ ] 创建 app/parsers/__init__.py 解析器统一入口
+- [x] ~~创建 app/parsers/base.py 解析器基类~~
+- [x] ~~创建 app/parsers/pdf_parser.py PDF 解析器~~
+- [x] ~~创建 app/parsers/markdown_parser.py Markdown 解析器~~
+- [x] ~~创建 app/parsers/word_parser.py Word 解析器~~
+- [x] ~~创建 app/parsers/text_parser.py 文本解析器~~
+- [x] ~~创建 app/parsers/__init__.py 解析器统一入口~~
 
 ### 1.5 文档切片
 
-- [ ] 创建 app/chunkers/base.py 切片基类
-- [ ] 创建 app/chunkers/recursive_chunker.py 递归切片器
-- [ ] 创建 app/chunkers/semantic_chunker.py 语义切片器（可选）
+- [x] ~~创建 app/chunkers/base.py 切片基类~~
+- [x] ~~创建 app/chunkers/recursive_chunker.py 递归切片器~~
+- [x] ~~创建 app/chunkers/semantic_chunker.py 语义切片器（可选）~~
 
 ### 1.6 AI 能力封装
 
-- [ ] 创建 app/capabilities/embedding/bge.py BGE Embedding 模型
-- [ ] 创建 app/capabilities/llm/deepseek.py DeepSeek 集成
-- [ ] 创建 app/capabilities/llm/qwen.py Qwen 集成
-- [ ] 创建 app/capabilities/llm/openai.py OpenAI 集成
-- [ ] 创建 app/capabilities/llm/ollama.py Ollama 本地模型（可选）
+- [x] ~~创建 app/capabilities/embedding/bge.py BGE Embedding 模型~~
+- [x] ~~创建 app/capabilities/llm/deepseek.py DeepSeek 集成~~
+- [x] ~~创建 app/capabilities/llm/qwen.py Qwen 集成~~
+- [x] ~~创建 app/capabilities/llm/openai.py OpenAI 集成~~
+- [x] ~~创建 app/capabilities/llm/ollama.py Ollama 本地模型（可选）~~
 
 ### 1.7 向量存储
 
-- [ ] 创建 app/vectorstores/base.py 向量存储基类
-- [ ] 创建 app/vectorstores/chroma.py Chroma 实现
+- [x] ~~创建 app/vectorstores/base.py 向量存储基类~~
+- [x] ~~创建 app/vectorstores/chroma.py Chroma 实现~~
 - [ ] 创建 app/vectorstores/milvus.py Milvus 实现（可选）
 
 ### 1.8 业务服务层
 
-- [ ] 创建 app/services/document_service.py 文档处理服务
-- [ ] 创建 app/services/chunk_service.py 切片处理服务
-- [ ] 创建 app/services/embedding_service.py 向量化服务
-- [ ] 创建 app/services/vector_store_service.py 向量存储服务
-- [ ] 创建 app/services/retrieval_service.py 检索服务
-- [ ] 创建 app/services/llm_service.py LLM 服务
-- [ ] 创建 app/services/chat_service.py 问答服务
+- [x] ~~创建 app/services/document_service.py 文档处理服务~~
+- [x] ~~创建 app/services/chunk_service.py 切片处理服务~~
+- [x] ~~创建 app/services/embedding_service.py 向量化服务~~
+- [x] ~~创建 app/services/vector_store_service.py 向量存储服务~~
+- [x] ~~创建 app/services/retrieval_service.py 检索服务~~
+- [x] ~~创建 app/services/llm_service.py LLM 服务~~
+- [x] ~~创建 app/services/chat_service.py 问答服务~~
 
 ### 1.9 API 路由
 
-- [ ] 创建 app/api/deps.py 依赖注入
-- [ ] 创建 app/api/v1/health.py 健康检查 API
-- [ ] 创建 app/api/v1/document.py 文档上传 API
-- [ ] 创建 app/api/v1/knowledge_base.py 知识库 API
-- [ ] 创建 app/api/v1/chat.py 问答 API
+- [x] ~~创建 app/api/deps.py 依赖注入~~
+- [x] ~~创建 app/api/v1/health.py 健康检查 API~~
+- [x] ~~创建 app/api/v1/document.py 文档上传 API~~
+- [x] ~~创建 app/api/v1/knowledge_base.py 知识库 API~~
+- [x] ~~创建 app/api/v1/chat.py 问答 API~~
 
 ### 1.10 主应用入口
 
-- [ ] 创建 app/main.py FastAPI 入口
-- [ ] 创建 app/__init__.py
+- [x] ~~创建 app/main.py FastAPI 入口~~
+- [x] ~~创建 app/__init__.py~~
 
 ### 1.11 前端界面（可选）
 
@@ -114,47 +114,48 @@
 
 ### 2.1 混合检索
 
-- [ ] 创建 app/services/bm25_retriever.py BM25 检索
-- [ ] 创建 app/services/hybrid_retrieval_service.py 混合检索服务
-- [ ] 实现 RRF 融合算法
-- [ ] 编写混合检索测试
+- [x] ~~创建 app/services/bm25_retriever.py BM25 检索~~
+- [x] ~~创建 app/services/hybrid_retrieval_service.py 混合检索服务~~
+- [x] ~~实现 RRF 融合算法~~
+- [x] ~~编写混合检索测试~~
 
 ### 2.2 Prompt 工程
 
-- [ ] 优化 System Prompt 模板
-- [ ] 实现上下文压缩
-- [ ] 实现 Query 改写（可选）
+- [x] ~~优化 System Prompt 模板~~
+- [x] ~~实现上下文压缩~~
+- [x] ~~实现 Query 改写（可选）~~
 
 ### 2.3 流式输出
 
-- [ ] 实现 SSE 流式响应
-- [ ] 集成到问答 API
-- [ ] 前端流式显示
+- [x] ~~实现 SSE 流式响应~~
+- [x] ~~集成到问答 API~~
+- [x] ~~前端流式显示~~
 
 ### 2.4 对话历史
 
-- [ ] 实现对话历史存储
-- [ ] 实现多轮对话上下文管理
-- [ ] 实现会话管理 API
+- [x] ~~实现对话历史存储~~
+- [x] ~~实现多轮对话上下文管理~~
+- [x] ~~实现会话管理 API~~
 
 ### 2.5 重排序 (Rerank)
 
-- [ ] 创建 app/capabilities/rerank/bge_reranker.py
-- [ ] 集成到检索流程
-- [ ] 编写重排序测试
+- [x] ~~创建 app/capabilities/rerank/bge_reranker.py~~
+- [x] ~~RerankService 已实现 (app/services/rerank_service.py)~~
+- [x] ~~将 RerankService 集成到 HybridRetrievalService.retrieve_with_rerank()（当前只是截断，未调用 reranker）~~
+- [x] ~~编写重排序测试~~
 
 ### 2.6 文档管理增强
 
-- [ ] 实现文档列表 API
-- [ ] 实现文档删除 API
-- [ ] 实现文档状态查询
-- [ ] 实现文档预览
+- [x] ~~实现文档列表 API (GET /documents)~~
+- [x] ~~实现文档删除 API (DELETE /documents/{id})~~
+- [x] ~~实现文档状态查询 (GET /documents/{id} 含 status 字段)~~
+- [x] ~~实现文档预览 API (GET /documents/{id}/preview，支持 max_chars 参数)~~
 
 ### 2.7 性能优化
 
-- [ ] 异步处理优化
-- [ ] 缓存策略实现
-- [ ] 批量处理优化
+- [x] ~~异步处理优化（服务层已全面使用 async/await）~~
+- [x] ~~缓存策略实现（Redis 集成用于会话存储）~~
+- [x] ~~批量处理优化（EmbeddingService.embed_batch() + VectorStoreService.add_vectors_batch()）~~
 
 ---
 
@@ -255,6 +256,10 @@
 
 | 日期 | 更新内容 | 更新人 |
 |------|----------|--------|
+| 2026-05-16 | 完成 2.3 前端流式显示：重构 chatApi.stream() 使用 ReadableStream API + 正确解析 event 分支 + 自动补全 session_id + sources 事件驱动获取；修复 ChatPage 流式逻辑（消除重复/无效代码）；SourceCard 兼容后端 StreamSource 格式；更新日志：前端修复/后端优化/2.3 全部完成 | - |
+| 2026-05-16 | 完成 2.4 对话历史管理：新增 Redis 持久化存储 + SessionService + 滑动窗口上下文裁剪 + 会话管理 API（list/delete/clear）；重构 ChatService 使用 SessionService；ChatSession 模型新增 trim_messages/get_messages_summary 方法 |
+| 2026-05-16 | 同步 todo_list 状态：2.5 重排序(BGE reranker 文件已创建，RerankService 已实现，集成步骤待完成)、2.6 文档管理(列表/删除/状态查询已实现，预览待完成)、2.7 性能优化(异步/缓存已实现，批量处理待完成) | - |
+| 2026-05-16 | 完成 2.5 重排序：RerankService 集成到 HybridRetrievalService/RetrievalService；新增 28 个测试全部通过；完成 2.6 文档预览 API (GET /documents/{id}/preview)；完成 2.7 批量处理优化（embed_batch + add_vectors_batch） | - |
 | 2026-05-15 | 初始创建任务清单 | - |
 | 2026-05-15 | 完成 Git 仓库初始化，连接 GitHub，上传初始提交 | - |
 

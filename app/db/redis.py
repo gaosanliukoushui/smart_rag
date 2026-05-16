@@ -1,6 +1,7 @@
 """Redis connection management."""
 
-from typing import Optional
+import json
+from typing import Optional, List
 
 try:
     import redis.asyncio as redis
@@ -69,6 +70,53 @@ class RedisClient:
         if not self._client:
             raise RuntimeError("Redis not connected. Call connect() first.")
         return self._client
+
+    async def set_json(
+        self,
+        key: str,
+        value: dict,
+        expire: Optional[int] = None,
+    ) -> bool:
+        """Set a JSON-serializable value with optional expiration."""
+        if not self._client:
+            await self.connect()
+        serialized = json.dumps(value, default=str)
+        return await self._client.set(key, serialized, ex=expire)
+
+    async def get_json(self, key: str) -> Optional[dict]:
+        """Get a JSON value by key."""
+        if not self._client:
+            await self.connect()
+        raw = await self._client.get(key)
+        if raw is None:
+            return None
+        return json.loads(raw)
+
+    async def set_session(
+        self,
+        session_id: str,
+        session_data: dict,
+        ttl: int = 86400 * 7,
+    ) -> bool:
+        """Store a chat session with a 7-day default TTL."""
+        return await self.set_json(f"session:{session_id}", session_data, expire=ttl)
+
+    async def get_session(self, session_id: str) -> Optional[dict]:
+        """Retrieve a chat session by ID."""
+        return await self.get_json(f"session:{session_id}")
+
+    async def delete_session(self, session_id: str) -> int:
+        """Delete a chat session by ID."""
+        return await self.delete(f"session:{session_id}")
+
+    async def list_sessions(self, pattern: str = "session:*") -> List[str]:
+        """List all session keys matching the pattern."""
+        if not self._client:
+            await self.connect()
+        keys = []
+        async for key in self._client.scan_iter(match=pattern):
+            keys.append(key)
+        return keys
 
 
 redis_client = RedisClient()

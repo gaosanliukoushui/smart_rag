@@ -58,3 +58,28 @@ class DocumentService:
         doc.chunk_count = count
         doc.updated_at = datetime.utcnow()
         return doc
+
+    async def get_document_preview(self, doc_id: str) -> dict:
+        """
+        Get document preview content by re-parsing the file.
+
+        Returns:
+            dict with 'content' (raw text), 'page_count', 'metadata'
+        """
+        doc = await self.get_document(doc_id)
+        file_path = Path(doc.file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        from app.parsers import get_parser
+        parser = get_parser(file_path)
+        content = parser.parse(file_path)
+        metadata = parser.get_metadata(file_path)
+
+        return {
+            "document_id": doc.id,
+            "title": doc.title,
+            "content": content,
+            "file_type": doc.file_type,
+            "metadata": metadata,
+        }

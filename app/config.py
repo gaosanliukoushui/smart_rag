@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     DEEPSEEK_MODEL: str = "deepseek-chat"
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
 
-    QWEN_API_KEY: str = ""
+    QWEN_API_KEY: str = "sk-76ebc336d7384d50ad268ff43f74af9a"
     QWEN_MODEL: str = "qwen-plus"
     QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 

@@ -17,7 +17,7 @@ class VectorStoreService:
         embeddings: List[List[float]],
         metadata: Optional[List[dict]] = None,
     ) -> List[str]:
-        """Add vectors to the store."""
+        """Add vectors to the store in batch."""
         if metadata is None:
             metadata = [{}] * len(texts)
 
@@ -30,6 +30,33 @@ class VectorStoreService:
                 "metadata": metadata[i],
             }
             ids.append(vector_id)
+
+        return ids
+
+    async def add_vectors_batch(
+        self,
+        texts: List[str],
+        embeddings: List[List[float]],
+        metadata: Optional[List[dict]] = None,
+        batch_size: int = 32,
+    ) -> List[str]:
+        """
+        Add vectors in batches for better performance with large datasets.
+
+        Processes texts in chunks of batch_size to control memory usage.
+        """
+        if metadata is None:
+            metadata = [{}] * len(texts)
+
+        ids = []
+        for start in range(0, len(texts), batch_size):
+            end = start + batch_size
+            batch_texts = texts[start:end]
+            batch_embeddings = embeddings[start:end]
+            batch_metadata = metadata[start:end]
+
+            batch_ids = await self.add_vectors(batch_texts, batch_embeddings, batch_metadata)
+            ids.extend(batch_ids)
 
         return ids
 
