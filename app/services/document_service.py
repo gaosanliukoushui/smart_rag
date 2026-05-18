@@ -143,8 +143,9 @@ class DocumentService:
         self.db.commit()
 
         if vector_ids:
-            import asyncio
-            asyncio.run(_vector_store_service.delete_vectors(vector_ids))
+            for vid in vector_ids:
+                if vid in _vector_store_service._embeddings:
+                    del _vector_store_service._embeddings[vid]
         logger.info("document_deleted", document_id=str(doc_id), vectors_deleted=len(vector_ids))
         return True
 

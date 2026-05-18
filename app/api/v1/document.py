@@ -25,7 +25,7 @@ from app.services.document_service import DocumentService, DocumentCreateData
 from app.services.chunk_service import ChunkService
 from app.services.knowledge_base_service import KnowledgeBaseService, KnowledgeBaseNotFoundError
 from app.services.document_update_service import DocumentUpdateService
-from app.services.vector_store_service import VectorStoreService
+from app.services.vector_store_service import VectorStoreService, get_vector_store
 from app.config import get_settings
 from app.core.exceptions import DocumentNotFoundError
 from app.core.logging import get_logger

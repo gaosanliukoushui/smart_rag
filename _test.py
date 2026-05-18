@@ -4,14 +4,16 @@ r = requests.post('http://localhost:3000/api/v1/auth/login', json={'username':'t
 token = r.json()['access_token']
 headers = {'Authorization': f'Bearer {token}'}
 
-r = requests.get('http://localhost:3000/api/v1/chat/sessions', headers=headers, timeout=10)
-result = r.json()
-sessions = result.get('sessions', [])
-print(f"Status: {r.status_code}, Sessions count: {len(sessions)}")
+kb = '139d254c-d29d-4eac-97ca-efcf9e7c0055'
+r = requests.get(f'http://localhost:3000/api/v1/documents', headers=headers, params={'knowledge_base_id': kb}, timeout=10)
+docs = r.json()['documents']
+print(f"Documents ({len(docs)}): {[d['id'][:8] for d in docs]}")
 
-if sessions:
-    sid = sessions[0]['session_id']
-    print(f"\nFetching history for: {sid}")
-    r2 = requests.get(f'http://localhost:3000/api/v1/chat/history/{sid}', headers=headers, timeout=10)
-    print(f"History status: {r2.status_code}")
-    print(f"History body: {r2.text[:500]}")
+if docs:
+    doc_id = docs[0]['id']
+    print(f"\nDeleting: {doc_id}")
+    r = requests.delete(f'http://localhost:3000/api/v1/documents/{doc_id}', headers=headers, timeout=10)
+    print(f"Delete status: {r.status_code}")
+
+    r = requests.get(f'http://localhost:3000/api/v1/documents', headers=headers, params={'knowledge_base_id': kb}, timeout=10)
+    print(f"Remaining docs: {len(r.json()['documents'])}")
