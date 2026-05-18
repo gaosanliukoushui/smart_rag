@@ -11,8 +11,11 @@ from sqlalchemy.orm import Session
 from app.models import Document, Chunk, KnowledgeBase
 from app.core.exceptions import DocumentNotFoundError
 from app.core.logging import get_logger
+from app.services.vector_store_service import VectorStoreService, get_vector_store
 
 logger = get_logger(__name__)
+
+_vector_store_service = get_vector_store()
 
 
 class KnowledgeBaseNotFoundError(Exception):
@@ -131,11 +134,18 @@ class DocumentService:
         doc = self.get_by_id(doc_id, tenant_id)
         kb_id = doc.knowledge_base_id
         doc_title = doc.title
-        logger.info("document_delete", document_id=str(doc_id), title=doc_title, kb_id=str(kb_id))
+
+        vector_ids = [str(c.id) for c in doc.chunks if c.embedding_id]
+        logger.info("document_delete", document_id=str(doc_id), title=doc_title, kb_id=str(kb_id), vector_count=len(vector_ids))
+
         self.db.delete(doc)
         self._update_kb_chunk_count(kb_id)
         self.db.commit()
-        logger.info("document_deleted", document_id=str(doc_id))
+
+        if vector_ids:
+            import asyncio
+            asyncio.run(_vector_store_service.delete_vectors(vector_ids))
+        logger.info("document_deleted", document_id=str(doc_id), vectors_deleted=len(vector_ids))
         return True
 
     def update_status(self, doc_id: UUID, status: str) -> Document:

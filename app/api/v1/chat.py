@@ -18,6 +18,8 @@ from app.schemas.chat import (
     ChatMessageResponse,
     ChatHistoryResponse,
     ChatMessage,
+    ChatSessionListResponse,
+    SessionSummary,
 )
 
 
@@ -45,12 +47,12 @@ async def chat(
         raise HTTPException(status_code=401, detail="Tenant not found in token", headers={"WWW-Authenticate": "Bearer"})
 
     if chat_request.session_id:
-        session = await _session_service.get_session(chat_request.session_id)
+        session = await _session_service.get_session_for_tenant(chat_request.session_id, str(tenant.id))
     else:
         session = None
 
     if not session:
-        session = await _chat_service.create_session(chat_request.knowledge_base_id)
+        session = await _chat_service.create_session(chat_request.knowledge_base_id, str(tenant.id))
         await _session_service.save_session(session)
 
     answer, sources = await _chat_service.ask(
@@ -84,12 +86,12 @@ async def chat_stream(
     async def event_generator():
         try:
             if chat_request.session_id:
-                session = await _session_service.get_session(chat_request.session_id)
+                session = await _session_service.get_session_for_tenant(chat_request.session_id, str(tenant.id))
             else:
                 session = None
 
             if not session:
-                session = await _chat_service.create_session(chat_request.knowledge_base_id)
+                session = await _chat_service.create_session(chat_request.knowledge_base_id, str(tenant.id))
                 await _session_service.save_session(session)
 
             yield {"event": "session", "data": session.id}
@@ -105,13 +107,13 @@ async def chat_stream(
             full_response = []
             async for token in token_gen:
                 full_response.append(token)
-                yield {"event": "message", "data": token}
+                yield {"event": "message", "data": token if token.startswith("{") else token}
 
             if session:
                 session.add_message("assistant", "".join(full_response))
                 await _session_service.save_session(session)
 
-            yield {"event": "sources", "data": json.dumps(sources, ensure_ascii=False)}
+            yield {"event": "sources", "data": sources}
             yield {"event": "done", "data": ""}
         except Exception as e:
             yield {"event": "error", "data": json.dumps({"error": str(e)}, ensure_ascii=False)}
@@ -130,7 +132,7 @@ async def get_chat_history(
     if not tenant:
         raise HTTPException(status_code=401, detail="Tenant not found in token", headers={"WWW-Authenticate": "Bearer"})
 
-    session = await _session_service.get_session(session_id)
+    session = await _session_service.get_session_for_tenant(session_id, str(tenant.id))
     if not session:
         raise HTTPException(status_code=404, detail=f"Session not found: {session_id}")
     return ChatHistoryResponse(
@@ -155,6 +157,35 @@ async def create_session(
     if not tenant:
         raise HTTPException(status_code=401, detail="Tenant not found in token", headers={"WWW-Authenticate": "Bearer"})
 
-    session = await _chat_service.create_session(knowledge_base_id)
+    session = await _chat_service.create_session(knowledge_base_id, str(tenant.id))
     await _session_service.save_session(session)
     return {"session_id": session.id, "created_at": session.created_at.isoformat()}
+
+
+@router.get("/sessions", response_model=ChatSessionListResponse)
+async def list_sessions(
+    request: Request,
+    knowledge_base_id: Optional[str] = None,
+    tenant: Annotated[Optional[Tenant], Depends(get_current_tenant)] = None,
+    current_user: Annotated[User, Depends(get_current_active_user)] = None,
+):
+    """List all chat sessions for the current tenant."""
+    if not tenant:
+        raise HTTPException(status_code=401, detail="Tenant not found in token", headers={"WWW-Authenticate": "Bearer"})
+
+    sessions = await _session_service.list_sessions(knowledge_base_id=knowledge_base_id)
+    tenant_sessions = [s for s in sessions if s.tenant_id == str(tenant.id)]
+    return ChatSessionListResponse(
+        sessions=[
+            SessionSummary(
+                session_id=s.id,
+                knowledge_base_id=s.knowledge_base_id,
+                message_count=len(s.messages),
+                first_message=s.messages[0].content if s.messages else None,
+                last_message=s.messages[-1].content if s.messages else None,
+                created_at=s.created_at,
+                updated_at=s.updated_at,
+            )
+            for s in tenant_sessions
+        ]
+    )

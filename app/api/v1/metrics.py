@@ -46,7 +46,6 @@ class MetricsCollector:
     @staticmethod
     def record_token_count(count: int) -> None:
         with _token_count_lock:
-            nonlocal _token_count
             _token_count += count
 
     @staticmethod

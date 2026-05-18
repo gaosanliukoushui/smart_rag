@@ -1,7 +1,7 @@
 """Security utilities."""
 
-import os
 import secrets
+from app.config import get_settings
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -14,10 +14,19 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
 def _get_jwt_secret() -> str:
-    """Get JWT secret key from environment or generate a default for development."""
-    secret = os.getenv("JWT_SECRET_KEY")
+    """Get JWT secret key from settings (.env via pydantic-settings).
+
+    Reading from the Settings singleton ensures the secret is always in sync
+    with the environment configuration, avoiding the case where .env is loaded
+    but os.environ is not updated (pydantic-settings v2 behavior).
+    """
+    settings = get_settings()
+    secret = settings.JWT_SECRET_KEY
     if not secret:
-        secret = os.getenv("SECRET_KEY", secrets.token_hex(32))
+        raise ValueError(
+            "JWT_SECRET_KEY must be set in .env. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
     return secret
 
 
@@ -34,7 +43,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expire = now + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({
         "exp": expire,
@@ -49,7 +58,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def create_refresh_token(data: dict) -> str:
     """Create a JWT refresh token."""
     to_encode = data.copy()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expire = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh", "iat": now})
     encoded_jwt = jwt.encode(to_encode, _get_jwt_secret(), algorithm=ALGORITHM)

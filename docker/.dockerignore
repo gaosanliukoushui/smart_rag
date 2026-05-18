@@ -1,58 +1,71 @@
+# Python cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg
+*.py[cod]
+*$py.class
 *.egg-info/
-dist/
-build/
-.eggs/
+*.egg
 
 # Virtual environments
-venv/
 .venv/
-ENV/
-env/
+venv/
+.env/
 
-# IDE
-.idea/
+# IDE & editor
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
 
-# Git
-.git/
-.gitignore
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-
-# Documentation
-docs/_build/
-*.md
-!requirements.txt
-
-# Data
-data/
-uploads/
-*.log
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Cursor
-.cursor/
-.cursor.rules/
-
 # OS
 .DS_Store
 Thumbs.db
+
+# Project data (generated at runtime)
+data/
+logs/
+*.log
+*.db
+*.sqlite
+
+# Chroma vector DB
+chroma/
+chroma_db/
+
+# Tests & scripts
+tests/
+scripts/
+docs/
+
+# Cursor / Claude artifacts
+.cursor/
+.cursorrc
+deep-teach/
+
+# Frontend build artifacts (built inside Docker)
+frontend/dist/
+frontend/node_modules/
+
+# Env files (secrets — mounted at runtime)
+.env
+.env.*
+!.env.docker.example
+
+# CI/CD
+.github/
+.git/
+.gitignore
+.gitattributes
+
+# Test cache
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (only root Dockerfile is used)
+docker/

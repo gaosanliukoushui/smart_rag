@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     DEEPSEEK_MODEL: str = "deepseek-chat"
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
 
-    QWEN_API_KEY: str = "sk-76ebc336d7384d50ad268ff43f74af9a"
+    QWEN_API_KEY: str = ""
     QWEN_MODEL: str = "qwen-plus"
     QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "console"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
     EMBEDDING_MODEL: str = "BAAI/bge-m3"
     EMBEDDING_DEVICE: str = "cpu"

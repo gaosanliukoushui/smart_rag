@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db_context
 from app.models.knowledge_base import Document, Chunk
 from app.services.chunk_service import ChunkService
-from app.services.vector_store_service import VectorStoreService
+from app.services.vector_store_service import VectorStoreService, get_vector_store
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -23,7 +23,7 @@ class DocumentUpdateService:
 
     def __init__(self):
         self.chunk_service = ChunkService()
-        self.vector_store_service = VectorStoreService()
+        self.vector_store_service = get_vector_store()
 
     @staticmethod
     def compute_file_hash(file_path: str | Path) -> str:
@@ -134,7 +134,11 @@ class DocumentUpdateService:
                 logger.exception("embedding_failed", document_id=str(document_id), error=str(e))
                 raise
 
-            vector_ids = await self.vector_store_service.add_vectors_batch(texts, embeddings)
+            vector_ids = await self.vector_store_service.add_vectors_batch(
+                texts,
+                embeddings,
+                metadata=[{"knowledge_base_id": str(doc.knowledge_base_id), "document_id": str(doc.id)}] * len(texts),
+            )
 
             # Link embeddings to chunks
             for chunk, vector_id in zip(new_chunk_records, vector_ids):

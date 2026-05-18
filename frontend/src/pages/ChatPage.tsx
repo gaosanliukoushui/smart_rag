@@ -1,9 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { knowledgeBaseApi, chatApi, type KnowledgeBase, type ChatMessage, type StreamSource } from '../api/client';
+import { knowledgeBaseApi, chatApi, type KnowledgeBase, type ChatMessage, type StreamSource, type SessionSummary } from '../api/client';
 import SourceCard from '../components/SourceCard';
 
-export default function ChatPage() {
+export interface ChatPageHandle {
+  clearConversation: () => void;
+}
+
+const ChatPage = forwardRef<ChatPageHandle>(function ChatPage(_props, ref) {
   const { kbId } = useParams<{ kbId: string }>();
   const navigate = useNavigate();
   const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
@@ -12,23 +16,69 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [activeSources, setActiveSources] = useState<StreamSource[] | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  useImperativeHandle(ref, () => ({
+    clearConversation: () => {
+      setMessages([]);
+      setActiveSources(null);
+      setCurrentSessionId(null);
+    },
+  }));
+
   useEffect(() => {
-    knowledgeBaseApi.list().then(setKbs).catch(console.error);
+    knowledgeBaseApi.list().then((data) => setKbs(data.knowledge_bases)).catch(console.error);
+  }, []);
+
+  const loadSessions = useCallback(async (kbId: string) => {
+    setSessionsLoading(true);
+    try {
+      const list = await chatApi.listSessions(kbId);
+      setSessions(list);
+    } catch (err) {
+      console.error('Failed to load sessions:', err);
+    } finally {
+      setSessionsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (selectedKbId) {
       navigate(`/knowledge-bases/${selectedKbId}/chat`, { replace: true });
+      loadSessions(selectedKbId);
     }
-  }, [selectedKbId, navigate]);
+  }, [selectedKbId, navigate, loadSessions]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeSources]);
+
+  const loadSessionHistory = useCallback(async (sessionId: string) => {
+    try {
+      const history = await chatApi.getHistory(sessionId);
+      const msgs: ChatMessage[] = history.map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        sources: m.sources as StreamSource[] | undefined,
+      }));
+      setMessages(msgs);
+      setCurrentSessionId(sessionId);
+      setActiveSources(null);
+    } catch (err) {
+      console.error('Failed to load session history:', err);
+    }
+  }, []);
+
+  const startNewChat = useCallback(() => {
+    setMessages([]);
+    setActiveSources(null);
+    setCurrentSessionId(null);
+  }, []);
 
   const handleSend = useCallback(async () => {
     const question = input.trim();
@@ -43,13 +93,14 @@ export default function ChatPage() {
 
     abortRef.current = new AbortController();
     let assistantText = '';
-    let currentSessionId: string | undefined;
-    let pendingSources: StreamSource[] | null = null;
+    let pendingSources: StreamSource[] | undefined = undefined;
+    let receivedSessionId: string | undefined = undefined;
 
     try {
       const stream = chatApi.stream({
         knowledge_base_id: selectedKbId,
-        question,
+        message: question,
+        session_id: currentSessionId ?? undefined,
       });
 
       const reader = stream.getReader();
@@ -58,8 +109,10 @@ export default function ChatPage() {
         const { done, value } = await reader.read();
         if (done) break;
 
-        if (value.sessionId) {
-          currentSessionId = value.sessionId;
+        if (value.sessionId && !receivedSessionId) {
+          receivedSessionId = value.sessionId;
+          setCurrentSessionId(receivedSessionId);
+          loadSessions(selectedKbId);
         }
         if (value.token) {
           assistantText += value.token;
@@ -72,7 +125,7 @@ export default function ChatPage() {
           });
         }
         if (value.sources) {
-          pendingSources = value.sources;
+          pendingSources = value.sources ?? undefined;
         }
         if (value.done) {
           break;
@@ -100,7 +153,7 @@ export default function ChatPage() {
       setStreaming(false);
       abortRef.current = null;
     }
-  }, [input, selectedKbId, streaming]);
+  }, [input, selectedKbId, streaming, currentSessionId, loadSessions]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -111,6 +164,23 @@ export default function ChatPage() {
 
   const currentKb = kbs.find((k) => k.id === selectedKbId);
 
+  const formatSessionLabel = (session: SessionSummary): string => {
+    if (!session.last_message) return '新对话';
+    return session.last_message.length > 22
+      ? session.last_message.slice(0, 22) + '...'
+      : session.last_message;
+  };
+
+  const formatTime = (isoString: string): string => {
+    const d = new Date(isoString);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+    return `${Math.floor(diff / 86400000)}天前`;
+  };
+
   return (
     <div className="flex flex-1 h-[calc(100vh-4rem)] overflow-hidden">
       {/* Sidebar */}
@@ -119,7 +189,10 @@ export default function ChatPage() {
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">选择知识库</h2>
           <select
             value={selectedKbId}
-            onChange={(e) => setSelectedKbId(e.target.value)}
+            onChange={(e) => {
+              setSelectedKbId(e.target.value);
+              startNewChat();
+            }}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
           >
             <option value="">— 选择知识库 —</option>
@@ -131,16 +204,50 @@ export default function ChatPage() {
           </select>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
-          <button
-            onClick={() => { setMessages([]); setActiveSources(null); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            清空对话
-          </button>
+        {/* Session list */}
+        <div className="flex-1 overflow-y-auto py-3 px-2">
+          <div className="flex items-center justify-between px-2 mb-1">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">会话记录</h2>
+            <button
+              onClick={() => {
+                startNewChat();
+                if (selectedKbId) loadSessions(selectedKbId);
+              }}
+              className="p-1 text-gray-400 hover:text-primary-600 hover:bg-gray-100 rounded transition"
+              title="新对话"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+
+          {sessionsLoading ? (
+            <div className="px-3 py-2 text-xs text-gray-400">加载中...</div>
+          ) : sessions.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-gray-400">暂无会话记录</div>
+          ) : (
+            <div className="space-y-0.5">
+              {sessions.map((session) => (
+                <button
+                  key={session.session_id}
+                  onClick={() => loadSessionHistory(session.session_id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition text-sm ${
+                    currentSessionId === session.session_id
+                      ? 'bg-primary-50 border-l-2 border-primary-500'
+                      : 'hover:bg-gray-100 border-l-2 border-transparent'
+                  }`}
+                >
+                  <div className="text-gray-800 truncate">{formatSessionLabel(session)}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{formatTime(session.updated_at)} · {session.message_count}条</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom utility buttons */}
+        <div className="border-t border-gray-100 py-3 px-2 space-y-1">
           <button
             onClick={() => navigate(`/knowledge-bases/${selectedKbId}/documents`)}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition"
@@ -261,4 +368,6 @@ export default function ChatPage() {
       </main>
     </div>
   );
-}
+});
+
+export default ChatPage;

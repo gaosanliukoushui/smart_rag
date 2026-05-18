@@ -1,9 +1,11 @@
 """Authentication API endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user, get_current_active_user
+from app.models import UserRole
 from app.schemas.auth import Token, UserCreate, UserLogin, UserResponse
 from app.services.auth_service import (
     AuthService,
@@ -35,7 +37,17 @@ async def login(request: Request, data: UserLogin, db: Session = Depends(get_db)
     service = AuthService(db)
     try:
         user = service.authenticate(data)
-        tokens = service.create_tokens(user)
+        user_role = (
+            db.execute(
+                select(UserRole)
+                .where(UserRole.user_id == user.id)
+                .order_by(UserRole.created_at.asc())
+                .limit(1)
+            )
+            .scalar_one_or_none()
+        )
+        tenant_id = user_role.tenant_id if user_role else None
+        tokens = service.create_tokens(user, tenant_id)
         return tokens
     except InvalidCredentialsError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)

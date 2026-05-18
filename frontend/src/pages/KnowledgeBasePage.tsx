@@ -14,7 +14,7 @@ export default function KnowledgeBasePage() {
     setLoading(true);
     try {
       const data = await knowledgeBaseApi.list();
-      setKbs(data);
+      setKbs(data.knowledge_bases);
     } catch {
       console.error('Failed to load knowledge bases');
     } finally {

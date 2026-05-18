@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 
 const apiClient = axios.create({
   baseURL: '/api/v1',
@@ -7,6 +7,94 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// --- Token management ---
+
+const TOKEN_KEY = 'access_token';
+
+export const tokenStorage = {
+  get: () => localStorage.getItem(TOKEN_KEY),
+  set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
+  clear: () => localStorage.removeItem(TOKEN_KEY),
+};
+
+// Auto-attach Bearer token and handle 401 refresh
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = tokenStorage.get();
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+let isRefreshing = false;
+let refreshQueue: Array<(token: string) => void> = [];
+
+apiClient.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    const original = err.config;
+    if (err.response?.status === 401 && !original._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          refreshQueue.push((token: string) => {
+            original.headers.Authorization = `Bearer ${token}`;
+            resolve(apiClient(original));
+          });
+        });
+      }
+      original._retry = true;
+      isRefreshing = true;
+      try {
+        const refresh = localStorage.getItem('refresh_token');
+        if (refresh) {
+          const { data } = await axios.post<{ access_token: string; refresh_token: string }>(
+            '/api/v1/auth/refresh',
+            null,
+            { params: { refresh_token: refresh } }
+          );
+          tokenStorage.set(data.access_token);
+          localStorage.setItem('refresh_token', data.refresh_token);
+          original.headers.Authorization = `Bearer ${data.access_token}`;
+          refreshQueue.forEach((cb) => cb(data.access_token));
+          refreshQueue = [];
+          return apiClient(original);
+        }
+      } catch {
+        tokenStorage.clear();
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/login';
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
+// --- 认证 (Auth) ---
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export const authApi = {
+  login: (data: LoginRequest) =>
+    apiClient.post<{ access_token: string; refresh_token: string }>('/auth/login', data).then((r) => r.data),
+
+  register: (data: RegisterRequest) =>
+    apiClient.post('/auth/register', data).then((r) => r.data),
+
+  me: () =>
+    apiClient.get('/auth/me').then((r) => r.data),
+};
 
 // --- 知识库 ---
 
@@ -24,9 +112,13 @@ export interface CreateKnowledgeBaseRequest {
   description?: string;
 }
 
+export interface KnowledgeBasesResponse {
+  knowledge_bases: KnowledgeBase[];
+}
+
 export const knowledgeBaseApi = {
   list: () =>
-    apiClient.get<KnowledgeBase[]>('/knowledge-bases').then((r) => r.data),
+    apiClient.get<KnowledgeBasesResponse>('/knowledge-bases').then((r) => r.data),
 
   create: (data: CreateKnowledgeBaseRequest) =>
     apiClient.post<KnowledgeBase>('/knowledge-bases', data).then((r) => r.data),
@@ -49,6 +141,11 @@ export interface Document {
   updated_at?: string;
 }
 
+export interface DocumentsResponse {
+  documents: Document[];
+  total: number;
+}
+
 export interface DocumentListParams {
   knowledge_base_id?: string;
   page?: number;
@@ -57,13 +154,13 @@ export interface DocumentListParams {
 
 export const documentApi = {
   list: (params?: DocumentListParams) =>
-    apiClient.get<Document[]>('/documents', { params }).then((r) => r.data),
+    apiClient.get<DocumentsResponse>('/documents', { params }).then((r) => r.data.documents),
 
   upload: (knowledgeBaseId: string, file: File, onProgress?: (percent: number) => void) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('knowledge_base_id', knowledgeBaseId);
     return apiClient.post<Document>('/documents/upload', formData, {
+      params: { knowledge_base_id: knowledgeBaseId },
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (e) => {
         if (e.total && onProgress) {
@@ -100,7 +197,7 @@ export interface ChatMessage {
 
 export interface ChatRequest {
   knowledge_base_id: string;
-  question: string;
+  message: string;
   session_id?: string;
   stream?: boolean;
 }
@@ -115,6 +212,16 @@ export interface ChatHistoryMessage {
   role: 'user' | 'assistant';
   content: string;
   sources?: Source[];
+}
+
+export interface SessionSummary {
+  session_id: string;
+  knowledge_base_id: string;
+  message_count: number;
+  first_message: string | null;
+  last_message: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface StreamResult {
@@ -137,7 +244,10 @@ export const chatApi = {
         controller = c;
         fetch('/api/v1/chat/stream', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(tokenStorage.get() ? { Authorization: `Bearer ${tokenStorage.get()}` } : {}),
+          },
           body: JSON.stringify({ ...data, stream: true }),
         }).then(async (response) => {
           if (!response.ok) {
@@ -222,4 +332,9 @@ export const chatApi = {
 
   getHistory: (sessionId: string) =>
     apiClient.get<ChatHistoryMessage[]>(`/chat/history/${sessionId}`).then((r) => r.data),
+
+  listSessions: (knowledgeBaseId?: string) =>
+    apiClient.get<{ sessions: SessionSummary[] }>('/chat/sessions', {
+      params: knowledgeBaseId ? { knowledge_base_id: knowledgeBaseId } : undefined,
+    }).then((r) => r.data.sessions),
 };

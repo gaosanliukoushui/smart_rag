@@ -1,6 +1,7 @@
 """Embedding service for generating text embeddings."""
 
 from typing import List, Optional
+import asyncio
 import numpy as np
 
 
@@ -22,13 +23,17 @@ class EmbeddingService:
         """Load the embedding model."""
         if self._model is None:
             from sentence_transformers import SentenceTransformer
-            self._model = SentenceTransformer(self.model_name, device=self.device)
+            self._model = await asyncio.to_thread(
+                SentenceTransformer, self.model_name, device=self.device
+            )
         return self._model
 
     async def embed(self, texts: List[str]) -> List[List[float]]:
         """Generate embeddings for texts."""
         model = await self.load_model()
-        embeddings = model.encode(texts, normalize_embeddings=True)
+        embeddings = await asyncio.to_thread(
+            model.encode, texts, normalize_embeddings=True
+        )
         return embeddings.tolist()
 
     async def embed_batch(
@@ -49,7 +54,8 @@ class EmbeddingService:
             List of embedding vectors.
         """
         model = await self.load_model()
-        all_embeddings = model.encode(
+        all_embeddings = await asyncio.to_thread(
+            model.encode,
             texts,
             batch_size=batch_size,
             normalize_embeddings=True,

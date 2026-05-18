@@ -25,9 +25,13 @@ from app.services.document_service import DocumentService, DocumentCreateData
 from app.services.chunk_service import ChunkService
 from app.services.knowledge_base_service import KnowledgeBaseService, KnowledgeBaseNotFoundError
 from app.services.document_update_service import DocumentUpdateService
+from app.services.vector_store_service import VectorStoreService
 from app.config import get_settings
 from app.core.exceptions import DocumentNotFoundError
+from app.core.logging import get_logger
 from app.middleware.rate_limit import limiter
+
+logger = get_logger(__name__)
 
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -112,15 +116,39 @@ async def upload_document(
     chunks = chunk_service.create_chunks(doc.id, text)
     for chunk in chunks:
         db.add(chunk)
+    db.flush()
+
+    texts = [c.content for c in chunks]
+    from app.services.embedding_service import EmbeddingService
+    from app.services.vector_store_service import get_vector_store
+    embedding_service = EmbeddingService()
+    vector_store_service = get_vector_store()
+
+    try:
+        embeddings = await embedding_service.embed_batch(texts)
+        logger.info(f"[UPLOAD] Generated {len(embeddings)} embeddings for doc {doc.id}")
+        vector_ids = await vector_store_service.add_vectors_batch(
+            texts,
+            embeddings,
+            metadata=[{"knowledge_base_id": str(knowledge_base_id), "document_id": str(doc.id)}] * len(texts),
+        )
+        logger.info(f"[UPLOAD] Stored {len(vector_ids)} vectors, total in store now: {len(vector_store_service._embeddings)}")
+        for chunk, vector_id in zip(chunks, vector_ids):
+            chunk.embedding_id = vector_id
+        doc_service.update_status(doc.id, "ready")
+    except Exception as e:
+        doc_service.update_status(doc.id, "parsed")
+        logger.warning(f"Embedding generation failed for doc {doc.id}: {e}")
+
     doc_service.update_chunk_count(doc.id, len(chunks))
-    doc_service.update_status(doc.id, "parsed")
     db.commit()
 
+    vectors_stored = len(vector_ids) if "vector_ids" in dir() and vector_ids else "N/A"
     return DocumentUploadResponse(
         document_id=doc.id,
         filename=file.filename,
         status=doc.status,
-        message=f"Successfully parsed into {len(chunks)} chunks",
+        message=f"Successfully parsed into {len(chunks)} chunks, vectors stored: {vectors_stored}",
     )
 
 
@@ -199,6 +227,16 @@ async def delete_document(
     doc_service = _get_doc_service(db)
     try:
         doc = doc_service.get_by_id(document_id, tenant.id)
+
+        # Delete vectors associated with document chunks
+        from sqlalchemy import select
+        from app.models.knowledge_base import Chunk
+        chunk_records = db.execute(select(Chunk.embedding_id).where(Chunk.document_id == document_id)).scalars().all()
+        vector_ids = [cid for cid in chunk_records if cid]
+        if vector_ids:
+            vector_store = get_vector_store()
+            await vector_store.delete_vectors(vector_ids)
+
         file_path = Path(doc.file_path)
         if file_path.exists():
             file_path.unlink()

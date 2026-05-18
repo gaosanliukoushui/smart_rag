@@ -16,10 +16,6 @@ const getTitle = (src: SourceItem): string => {
   return 'document_title' in src ? src.document_title : '';
 };
 
-const getDocId = (src: SourceItem): string => {
-  return 'document_id' in src ? src.document_id : '';
-};
-
 export default function SourceCard({ sources }: Props) {
   if (!sources.length) return null;
 

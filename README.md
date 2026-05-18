@@ -3,6 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/FastAPI-0.115-green.svg" alt="FastAPI">
+  <img src="https://img.shields.io/badge/React-18.3-blue.svg" alt="React">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
 </p>
 
@@ -20,6 +21,10 @@ SmartRAG 是一个基于 RAG（检索增强生成）技术的智能知识库系�
 - **流式输出**: SSE 实时流式响应
 - **多知识库**: 支持多租户知识库隔离
 - **对话历史**: 支持多轮对话上下文
+- **用户认证**: JWT + RBAC 权限管理
+- **API 限流**: 基于 IP 和用户的双层限流
+- **监控指标**: Prometheus 格式 metrics 端点
+- **Docker 部署**: 一键部署到生产环境
 
 ---
 
@@ -28,13 +33,15 @@ SmartRAG 是一个基于 RAG（检索增强生成）技术的智能知识库系�
 | 层级 | 技术 |
 |------|------|
 | 后端框架 | FastAPI |
+| 前端框架 | React + TypeScript + Vite + Tailwind CSS |
 | AI 框架 | LangChain / LlamaIndex |
 | 向量数据库 | Chroma / Milvus / pgvector |
 | 大模型 | DeepSeek / Qwen / OpenAI / Ollama |
 | Embedding | BGE-M3 / BGE-Large |
+| 重排序 | BGE-Reranker-v2-m3 |
 | 数据库 | PostgreSQL |
 | 缓存 | Redis |
-| 部署 | Docker |
+| 部署 | Docker + Nginx |
 
 ---
 
@@ -81,20 +88,28 @@ LLM_PROVIDER=qwen
 QWEN_API_KEY=your-api-key
 ```
 
-### 运行
+### 运行（手动部署）
 
 ```bash
 # 启动开发服务器
 uvicorn app.main:app --reload --port 8000
 ```
 
-访问 http://localhost:8000/docs 查看 API 文档。
-
-### Docker 部署
+### 运行（Docker 部署）
 
 ```bash
 cd docker
 docker-compose up -d
+```
+
+访问 http://localhost:8000/docs 查看 API 文档。
+
+前端开发服务器：
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
@@ -108,20 +123,25 @@ SmartRAG/
 │   │   └── v1/           # API v1 版本
 │   ├── capabilities/     # AI 能力封装
 │   │   ├── embedding/    # Embedding 模型
-│   │   ├── llm/          # LLM 模型
+│   │   ├── llm/         # LLM 模型
 │   │   └── rerank/       # 重排序模型
 │   ├── chunkers/         # 文档切片
 │   ├── core/             # 核心模块
 │   ├── db/               # 数据库连接
+│   ├── middleware/       # 中间件（限流、日志）
 │   ├── models/           # 数据模型
 │   ├── parsers/          # 文档解析器
 │   ├── schemas/          # Pydantic Schema
 │   ├── services/         # 业务服务
 │   └── vectorstores/     # 向量存储
-├── docker/                # Docker 配置
-├── docs/                  # 文档
-├── scripts/               # 工具脚本
-└── tests/                 # 测试
+├── docker/               # Docker 配置
+├── docs/                 # 详细文档
+│   ├── api.md            # API 文档
+│   ├── architecture.md   # 架构文档
+│   └── deployment.md    # 部署文档
+├── frontend/             # React 前端
+├── scripts/              # 工具脚本
+└── tests/                # 测试
 ```
 
 ---
@@ -212,21 +232,46 @@ ruff format app/
 
 ## 开发路线图
 
-- [x] 项目初始化
-- [ ] 阶段一：最小可用 RAG
-  - [ ] 文档上传和解析
-  - [ ] 向量化和检索
-  - [ ] 基础问答
-- [ ] 阶段二：重点优化
-  - [ ] 混合检索
-  - [ ] 流式输出
-  - [ ] 对话历史
-- [ ] 阶段三：高级特性
-  - [ ] 多知识库
-  - [ ] Docker 部署
-  - [ ] 用户认证
+### 阶段一：最小可用 RAG
 
-详见 [todo_list.md](todo_list.md)
+- [x] ~~项目初始化~~
+- [x] ~~配置与基础设施~~
+- [x] ~~数据模型~~
+- [x] ~~文档解析器~~
+- [x] ~~文档切片~~
+- [x] ~~AI 能力封装~~
+- [x] ~~向量存储~~
+- [x] ~~业务服务层~~
+- [x] ~~API 路由~~
+- [x] ~~主应用入口~~
+
+### 阶段二：重点优化
+
+- [x] ~~混合检索~~
+- [x] ~~Prompt 工程~~
+- [x] ~~流式输出~~
+- [x] ~~对话历史~~
+- [x] ~~重排序 (Rerank)~~
+- [x] ~~文档管理增强~~
+- [x] ~~性能优化~~
+
+### 阶段三：高级特性
+
+- [x] ~~多知识库隔离~~
+- [x] ~~Docker 部署~~
+- [x] ~~用户认证~~
+- [x] ~~本地模型支持~~
+- [x] ~~监控与日志~~
+- [x] ~~API 限流~~
+- [x] ~~文档增量更新~~
+
+详见 [todo_list.md](todo_list.md) 和 [docs/](docs/) 目录下的详细文档：
+
+- [API 文档](docs/api.md) - 所有 API 端点的完整参考
+- [架构文档](docs/architecture.md) - 系统架构、RBAC 模型、数据流
+- [部署文档](docs/deployment.md) - Docker 部署、手动部署、环境变量说明
+
+---
 
 ---
 

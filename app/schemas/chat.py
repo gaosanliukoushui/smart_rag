@@ -48,4 +48,22 @@ class ChatSessionResponse(BaseModel):
     created_at: datetime
 
 
+class ChatSessionListResponse(BaseModel):
+    """Response schema for listing sessions."""
+
+    sessions: List["SessionSummary"]
+
+
+class SessionSummary(BaseModel):
+    """Summary of a chat session."""
+
+    session_id: str
+    knowledge_base_id: str
+    message_count: int
+    first_message: Optional[str] = None
+    last_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
 ChatHistoryResponse.model_rebuild()

@@ -102,11 +102,31 @@ async def get_current_tenant(
 
 
 async def get_tenant_from_header(
-    tenant_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
     db: Session = Depends(get_db),
 ) -> Tenant:
-    """Resolve tenant from request header/path parameter, verifying access."""
-    tenant = db.execute(select(Tenant).where(Tenant.id == tenant_id)).scalar_one_or_none()
+    """Resolve tenant from the current authenticated user's JWT token.
+
+    The token is automatically decoded via the get_current_active_user dependency
+    chain, making the tenant available without requiring an explicit header or
+    path parameter on each endpoint.
+    """
+    user_role = (
+        db.execute(
+            select(UserRole)
+            .where(UserRole.user_id == current_user.id)
+            .order_by(UserRole.created_at.asc())
+            .limit(1)
+        )
+        .scalar_one_or_none()
+    )
+    if not user_role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No tenant workspace found for current user",
+        )
+
+    tenant = db.execute(select(Tenant).where(Tenant.id == user_role.tenant_id)).scalar_one_or_none()
     if not tenant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
     if not tenant.is_active:

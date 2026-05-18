@@ -1,7 +1,7 @@
 # SmartRAG 开发任务清单
 
 > 本文档记录 SmartRAG 项目所有开发任务，完成后请划掉（使用删除线）。
-> 更新日期：2026-05-16
+> 更新日期：2026-05-16（文档完成）
 
 ---
 
@@ -9,11 +9,13 @@
 
 **项目名称**：SmartRAG 智能知识库系统
 **项目目标**：支持文档上传、自动切片、向量检索与智能问答的 AI 知识库系统
-**当前阶段**：阶段三完成
+**当前阶段**：全部功能已完成
 
 ---
 
 ## 阶段一：最小可用 RAG ✅
+
+> 除可选功能（Milvus）外全部完成
 
 ### 1.1 项目初始化
 
@@ -94,23 +96,23 @@
 - [x] ~~创建 app/main.py FastAPI 入口~~
 - [x] ~~创建 app/__init__.py~~
 
-### 1.11 前端界面（可选）
+### 1.11 前端界面
 
-- [ ] 创建基础 Web UI
-- [ ] 实现文档上传页面
-- [ ] 实现问答页面
+- [x] ~~创建基础 Web UI~~
+- [x] ~~实现文档上传页面~~
+- [x] ~~实现问答页面~~
 
 ### 1.12 测试
 
-- [ ] 创建 tests/conftest.py pytest 配置
-- [ ] 编写解析器单元测试
-- [ ] 编写切片器单元测试
-- [ ] 编写 Embedding 服务测试
-- [ ] 编写检索服务测试
+- [x] ~~创建 tests/conftest.py pytest 配置~~
+- [x] ~~编写解析器单元测试~~
+- [x] ~~编写切片器单元测试~~
+- [x] ~~编写 Embedding 服务测试~~
+- [x] ~~编写检索服务测试~~
 
 ---
 
-## 阶段二：重点优化 🔄
+## 阶段二：重点优化 ✅
 
 ### 2.1 混合检索
 
@@ -173,7 +175,7 @@
 - [x] ~~创建 docker/Dockerfile~~
 - [x] ~~创建 docker/docker-compose.yml~~
 - [x] ~~创建 docker/nginx.conf~~
-- [ ] 编写部署文档
+- [x] ~~编写部署文档~~
 
 ### 3.3 用户认证
 
@@ -214,41 +216,41 @@
 
 ---
 
-## 脚本工具 🔄
+## 脚本工具 ✅
 
-- [ ] 创建 scripts/init_db.py 数据库初始化
-- [ ] 创建 scripts/init_vector_db.py 向量库初始化
-- [ ] 创建 scripts/test_embedding.py Embedding 测试
-- [ ] 创建 scripts/load_sample_data.py 示例数据加载
-
----
-
-## 文档 🔄
-
-- [ ] 创建 docs/api.md API 文档
-- [ ] 创建 docs/architecture.md 架构文档
-- [ ] 创建 docs/deployment.md 部署文档
-- [ ] 更新 README.md
+- [x] ~~创建 scripts/init_db.py 数据库初始化~~
+- [x] ~~创建 scripts/init_vector_db.py 向量库初始化~~
+- [x] ~~创建 scripts/test_embedding.py Embedding 测试~~
+- [x] ~~创建 scripts/load_sample_data.py 示例数据加载~~
 
 ---
 
-## 项目里程碑 🔄
+## 文档 ✅
+
+- [x] ~~创建 docs/api.md API 文档~~
+- [x] ~~创建 docs/architecture.md 架构文档~~
+- [x] ~~创建 docs/deployment.md 部署文档~~
+- [x] ~~更新 README.md~~
+
+---
+
+## 项目里程碑 ✅
 
 ### Milestone 1: 核心功能 (MVP)
 > 目标：完成一个可工作的 RAG 系统
 
-- [ ] 文档上传和解析
-- [ ] 向量化和检索
-- [ ] 基础问答
-- [ ] 完成时间：_____
+- [x] ~~文档上传和解析~~
+- [x] ~~向量化和检索~~
+- [x] ~~基础问答~~
+- [x] 完成时间：2026-05-15
 
 ### Milestone 2: 生产就绪
 > 目标：提升质量和稳定性
 
-- [ ] 混合检索
-- [ ] 流式输出
-- [ ] 对话历史
-- [ ] 完成时间：_____
+- [x] ~~混合检索~~
+- [x] ~~流式输出~~
+- [x] ~~对话历史~~
+- [x] 完成时间：2026-05-16
 
 ### Milestone 3: 企业级功能
 > 目标：生产级别部署
@@ -256,7 +258,7 @@
 - [x] ~~多知识库~~
 - [x] ~~Docker 部署~~
 - [x] ~~用户认证~~
-- [ ] 完成时间：2026-05-16
+- [x] 完成时间：2026-05-16
 
 ---
 
@@ -264,6 +266,7 @@
 
 | 日期 | 更新内容 | 更新人 |
 |------|----------|--------|
+| 2026-05-16 | 完成文档全部内容：docs/api.md（完整API端点）、docs/architecture.md（多租户RBAC架构图）、docs/deployment.md（Docker/手动部署）、README.md 更新（技术栈/特性/路线图） | - |
 | 2026-05-16 | 完成阶段三全部内容：多租户架构(Tenant/User/Role/Permission ORM模型)、Docker部署完善(多阶段Dockerfile/健康检查/nginx)、完整RBAC认证(JWT注册登录/刷新/权限管理API)、119个测试全部通过 | - |
 | 2026-05-16 | 完成 2.3 前端流式显示：重构 chatApi.stream() 使用 ReadableStream API + 正确解析 event 分支 + 自动补全 session_id + sources 事件驱动获取；修复 ChatPage 流式逻辑（消除重复/无效代码）；SourceCard 兼容后端 StreamSource 格式；更新日志：前端修复/后端优化/2.3 全部完成 | - |
 | 2026-05-16 | 完成 2.4 对话历史管理：新增 Redis 持久化存储 + SessionService + 滑动窗口上下文裁剪 + 会话管理 API（list/delete/clear）；重构 ChatService 使用 SessionService；ChatSession 模型新增 trim_messages/get_messages_summary 方法 |

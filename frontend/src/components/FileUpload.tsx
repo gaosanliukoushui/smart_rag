@@ -1,11 +1,30 @@
 import { useState, useRef, useCallback } from 'react';
+import axios from 'axios';
 
-const ALLOWED_TYPES = ['.pdf', '.md', '.docx', '.txt'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.md', '.docx', '.txt'];
+
+// MIME types that match the allowed extensions
+const ALLOWED_MIME_TYPES: Record<string, string[]> = {
+  '.pdf': ['application/pdf'],
+  '.md': ['text/markdown', 'text/plain', 'application/octet-stream'],
+  '.docx': [
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+  ],
+  '.txt': ['text/plain', 'application/octet-stream'],
+};
+
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
 interface Props {
   knowledgeBaseId: string;
   onUploaded: () => void;
+}
+
+function isAllowedMimeType(ext: string, mimeType: string): boolean {
+  const allowed = ALLOWED_MIME_TYPES[ext];
+  if (!allowed) return false;
+  return allowed.includes(mimeType.toLowerCase());
 }
 
 export default function FileUpload({ knowledgeBaseId, onUploaded }: Props) {
@@ -18,10 +37,22 @@ export default function FileUpload({ knowledgeBaseId, onUploaded }: Props) {
   const upload = useCallback(
     async (file: File) => {
       const ext = '.' + file.name.split('.').pop()!.toLowerCase();
-      if (!ALLOWED_TYPES.includes(ext)) {
-        setError(`不支持的文件类型，仅支持：${ALLOWED_TYPES.join(' ')}`);
+
+      // 1. Extension check
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        setError(`不支持的文件类型，仅支持：${ALLOWED_EXTENSIONS.join(' ')}`);
         return;
       }
+
+      // 2. Content-Type (MIME) cross-check
+      // Silently normalize empty mime type to a fallback
+      const actualMime = (file.type || '').toLowerCase();
+      if (actualMime && !isAllowedMimeType(ext, actualMime)) {
+        setError(`文件类型不匹配：${file.name} 的实际类型为 ${actualMime || '未知'}，与扩展名不符`);
+        return;
+      }
+
+      // 3. Size check
       if (file.size > MAX_SIZE) {
         setError('文件大小不能超过 50MB');
         return;
@@ -40,8 +71,16 @@ export default function FileUpload({ knowledgeBaseId, onUploaded }: Props) {
           setProgress(0);
           onUploaded();
         }, 500);
-      } catch {
-        setError('上传失败，请重试');
+      } catch (err) {
+        const msg = (() => {
+          if (axios.isAxiosError(err) && err.response?.data?.detail) {
+            const d = err.response.data.detail;
+            if (typeof d === 'string') return d;
+            if (typeof d === 'object' && d.message) return d.message;
+          }
+          return '上传失败，请重试';
+        })();
+        setError(msg);
         setUploading(false);
         setProgress(0);
       }
@@ -81,7 +120,7 @@ export default function FileUpload({ knowledgeBaseId, onUploaded }: Props) {
         <input
           ref={inputRef}
           type="file"
-          accept={ALLOWED_TYPES.join(',')}
+          accept={ALLOWED_EXTENSIONS.join(',')}
           className="hidden"
           onChange={handleFileChange}
         />
@@ -121,14 +160,14 @@ export default function FileUpload({ knowledgeBaseId, onUploaded }: Props) {
               拖拽文件到此处，或 <span className="text-primary-600">点击选择</span>
             </p>
             <p className="mt-1.5 text-xs text-gray-400">
-              支持 {ALLOWED_TYPES.join(' ')}，最大 50MB
+              支持 {ALLOWED_EXTENSIONS.join(' ')}，最大 50MB
             </p>
           </>
         )}
       </div>
       {error && (
         <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {error}

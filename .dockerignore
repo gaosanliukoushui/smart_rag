@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.venv
+venv/
+*.egg
+
+# Node
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+!.env.docker.example
+
+# Docs
+*.md
+docs/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+docker/
+
+# Tests
+tests/
+**/test_*.py
+**/*_test.py
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
+temp/
+tmp/

@@ -3,6 +3,17 @@
 from typing import List, Optional, Tuple
 import uuid
 
+# Module-level singleton instance shared across all imports
+_vector_store: "VectorStoreService" | None = None
+
+
+def get_vector_store() -> "VectorStoreService":
+    """Get the global singleton VectorStoreService instance."""
+    global _vector_store
+    if _vector_store is None:
+        _vector_store = VectorStoreService()
+    return _vector_store
+
 
 class VectorStoreService:
     """Service for vector storage operations."""
@@ -65,12 +76,16 @@ class VectorStoreService:
         query_embedding: List[float],
         top_k: int = 5,
         threshold: float = 0.0,
+        knowledge_base_id: Optional[str] = None,
     ) -> List[Tuple[str, float, dict]]:
-        """Search for similar vectors."""
+        """Search for similar vectors, optionally filtered by knowledge base."""
         import numpy as np
 
         results = []
         for vector_id, data in self._embeddings.items():
+            if knowledge_base_id is not None:
+                if data["metadata"].get("knowledge_base_id") != knowledge_base_id:
+                    continue
             similarity = float(np.dot(query_embedding, data["embedding"]))
             if similarity >= threshold:
                 results.append((data["text"], similarity, data["metadata"]))

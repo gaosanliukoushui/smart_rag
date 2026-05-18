@@ -18,6 +18,7 @@ class SessionService:
         """Serialize a ChatSession to a dictionary."""
         return {
             "id": session.id,
+            "tenant_id": session.tenant_id,
             "knowledge_base_id": session.knowledge_base_id,
             "messages": [
                 {"role": m.role, "content": m.content, "created_at": m.created_at.isoformat()}
@@ -31,6 +32,7 @@ class SessionService:
         """Deserialize a dictionary to a ChatSession."""
         return ChatSession(
             id=data["id"],
+            tenant_id=data["tenant_id"],
             knowledge_base_id=data["knowledge_base_id"],
             messages=[
                 Message(
@@ -60,6 +62,15 @@ class SessionService:
                 self._memory_store[session_id] = session
                 return session
         return self._memory_store.get(session_id)
+
+    async def get_session_for_tenant(self, session_id: str, tenant_id: str) -> Optional[ChatSession]:
+        """Retrieve a chat session only if it belongs to the given tenant."""
+        session = await self.get_session(session_id)
+        if session is None:
+            return None
+        if session.tenant_id != tenant_id:
+            return None
+        return session
 
     async def delete_session(self, session_id: str) -> bool:
         """Delete a chat session by ID."""

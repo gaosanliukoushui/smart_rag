@@ -135,6 +135,7 @@ class ChatService:
         chunks = await self.retrieval_service.retrieve(
             query=query,
             top_k=top_k,
+            knowledge_base_id=knowledge_base_id,
         )
 
         compressed = _compress_context(chunks, self.max_context_tokens)
@@ -178,6 +179,7 @@ class ChatService:
         chunks = await self.retrieval_service.retrieve(
             query=query,
             top_k=top_k,
+            knowledge_base_id=knowledge_base_id,
         )
 
         compressed = _compress_context(chunks, self.max_context_tokens)
@@ -200,9 +202,9 @@ class ChatService:
 
         return self.llm_service.stream_generate(prompt), sources, session
 
-    async def create_session(self, knowledge_base_id: str) -> ChatSession:
+    async def create_session(self, knowledge_base_id: str, tenant_id: str) -> ChatSession:
         """Create a new chat session."""
-        return ChatSession(knowledge_base_id=knowledge_base_id)
+        return ChatSession(knowledge_base_id=knowledge_base_id, tenant_id=tenant_id)
 
     async def clear_history(self, session: ChatSession) -> None:
         """Clear all messages from a session."""
