@@ -1,5 +1,6 @@
 """Retrieval service for RAG retrieval operations."""
 
+import asyncio
 from typing import List, Tuple, Optional
 
 from app.services.embedding_service import EmbeddingService
@@ -52,20 +53,34 @@ class RetrievalService:
         await self._ensure_initialized()
         from app.core.logging import get_logger
         logger = get_logger(__name__)
-        logger.info(f"[RETRIEVE] kb_id={knowledge_base_id}, threshold={similarity_threshold}, total_vectors_in_store={len(self.vector_store_service._embeddings)}")
-        query_embedding = await self.embedding_service.embed_query(query)
-        logger.info(f"[RETRIEVE] query_emb dim={len(query_embedding)}, query='{query}'")
 
-        results = await self.vector_store_service.search(
-            query_embedding,
-            top_k=top_k,
-            threshold=similarity_threshold,
-            knowledge_base_id=knowledge_base_id,
-        )
-        logger.info(f"[RETRIEVE] search returned {len(results)} results")
-        for r in results:
-            logger.info(f"[RETRIEVE]   score={r[1]:.4f}, meta={r[2]}")
+        if not self.vector_store_service._embeddings:
+            logger.warning("[RETRIEVE] No vectors in store, skipping retrieval")
+            return []
 
+        try:
+            query_embedding = await asyncio.wait_for(
+                self.embedding_service.embed_query(query), timeout=30.0
+            )
+        except asyncio.TimeoutError:
+            logger.error("[RETRIEVE] Embedding timeout for query: %s", query)
+            return []
+        except Exception as e:
+            logger.error("[RETRIEVE] Embedding failed: %s", e)
+            return []
+
+        try:
+            results = await self.vector_store_service.search(
+                query_embedding,
+                top_k=top_k,
+                threshold=similarity_threshold,
+                knowledge_base_id=knowledge_base_id,
+            )
+        except Exception as e:
+            logger.error("[RETRIEVE] Search failed: %s", e)
+            return []
+
+        logger.info("[RETRIEVE] kb_id=%s, threshold=%s, results=%d", knowledge_base_id, similarity_threshold, len(results))
         return results
 
     async def retrieve_with_rerank(

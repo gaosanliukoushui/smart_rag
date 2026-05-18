@@ -1,6 +1,7 @@
 """Chat API endpoints."""
 
 import json
+import time
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, HTTPException, Request, Depends
@@ -13,6 +14,7 @@ from app.services.retrieval_service import RetrievalService
 from app.services.chat_service import ChatService
 from app.services.session_service import get_session_service
 from app.middleware.rate_limit import limiter
+from app.core.logging import get_logger
 from app.schemas.chat import (
     ChatMessageRequest,
     ChatMessageResponse,
@@ -21,6 +23,8 @@ from app.schemas.chat import (
     ChatSessionListResponse,
     SessionSummary,
 )
+
+logger = get_logger(__name__)
 
 
 router = APIRouter(prefix="/chat", tags=["Chat"])

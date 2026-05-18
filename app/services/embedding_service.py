@@ -1,8 +1,11 @@
 """Embedding service for generating text embeddings."""
 
+import os
 from typing import List, Optional
 import asyncio
 import numpy as np
+
+HF_ENDPOINT = os.environ.get("HF_ENDPOINT", "").strip() or None
 
 
 class EmbeddingService:
@@ -18,15 +21,30 @@ class EmbeddingService:
         self.device = device
         self.dimension = dimension
         self._model = None
+        self._load_error: Optional[Exception] = None
 
     async def load_model(self):
-        """Load the embedding model."""
-        if self._model is None:
+        """Load the embedding model with timeout and error handling."""
+        if self._load_error:
+            raise self._load_error
+        if self._model is not None:
+            return self._model
+        try:
             from sentence_transformers import SentenceTransformer
-            self._model = await asyncio.to_thread(
-                SentenceTransformer, self.model_name, device=self.device
+            self._model = await asyncio.wait_for(
+                asyncio.to_thread(SentenceTransformer, self.model_name, device=self.device, local_files_only=True),
+                timeout=60.0,
             )
-        return self._model
+            return self._model
+        except asyncio.TimeoutError:
+            self._load_error = RuntimeError(
+                f"Timeout loading embedding model '{self.model_name}'. "
+                "Check network or set HF_ENDPOINT/HF_MIRROR to a mirror site."
+            )
+            raise self._load_error
+        except Exception as e:
+            self._load_error = e
+            raise
 
     async def embed(self, texts: List[str]) -> List[List[float]]:
         """Generate embeddings for texts."""

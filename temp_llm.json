@@ -1,0 +1,1 @@
+{"model":"qwen-plus","messages":[{"role":"user","content":"say hello in 3 words"}],"max_tokens":20,"stream":true}
