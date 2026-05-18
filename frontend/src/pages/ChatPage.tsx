@@ -61,7 +61,7 @@ const ChatPage = forwardRef<ChatPageHandle>(function ChatPage(_props, ref) {
   const loadSessionHistory = useCallback(async (sessionId: string) => {
     try {
       const history = await chatApi.getHistory(sessionId);
-      const msgs: ChatMessage[] = history.map((m) => ({
+      const msgs: ChatMessage[] = (Array.isArray(history) ? history : history.messages ?? []).map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
         sources: m.sources as StreamSource[] | undefined,
