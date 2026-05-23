@@ -4,6 +4,8 @@ import asyncio
 import sys
 from pathlib import Path
 
+__test__ = False
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 

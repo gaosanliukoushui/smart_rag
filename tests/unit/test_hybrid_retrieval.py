@@ -61,6 +61,33 @@ class TestBM25Retriever:
         results = retriever.search("Document", top_k=3)
         assert len(results) == 3
 
+    def test_chinese_char_ngram_tokenizer(self):
+        """Test Chinese queries match without whitespace segmentation."""
+        corpus = [
+            "SmartRAG 支持混合检索和重排序",
+            "系统可以通过 Docker Compose 部署",
+            "用户认证使用 JWT 和 RBAC",
+        ]
+        retriever = BM25Retriever(tokenizer="char_ngram")
+        retriever.build_index(corpus)
+
+        results = retriever.search("混合检索", top_k=1)
+
+        assert results[0][0] == "SmartRAG 支持混合检索和重排序"
+
+    def test_search_preserves_metadata(self):
+        """Test BM25 results preserve source metadata."""
+        retriever = BM25Retriever(tokenizer="char_ngram")
+        retriever.build_index(
+            ["来源追溯包含 chunk_id"],
+            [{"document_id": "doc-1", "chunk_id": "chunk-1"}],
+        )
+
+        _, _, meta = retriever.search_with_scores("来源追溯", top_k=1)[0]
+
+        assert meta["document_id"] == "doc-1"
+        assert meta["chunk_id"] == "chunk-1"
+
 
 class TestHybridRetrievalService:
     """Tests for HybridRetrievalService."""

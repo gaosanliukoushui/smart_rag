@@ -1,0 +1,33 @@
+{"id":"agent_001","goal":"根据知识库里的部署文档，生成一份上线 checklist，并指出缺失的监控项。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["checklist","监控","报告"]}
+{"id":"agent_002","goal":"总结知识库中的 RAG 评测方法，并输出引用来源。","expected_tools":["list_documents","search_kb","summarize_document","ask_rag","create_report"],"required_keywords":["评测","引用","Recall"]}
+{"id":"agent_003","goal":"比较两份部署相关文档的差异，生成 Markdown 报告。","expected_tools":["list_documents","search_kb","compare_documents","ask_rag","create_report"],"required_keywords":["差异","Markdown","报告"]}
+{"id":"agent_004","goal":"找出知识库中关于 Prometheus 指标的说明，并生成运维检查清单。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["Prometheus","检查清单"]}
+{"id":"agent_005","goal":"概括当前知识库有哪些文档，以及每篇文档适合回答什么问题。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["文档","问题"]}
+{"id":"agent_006","goal":"生成一份 SmartRAG 项目面试介绍稿，必须包含检索、评测和部署。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["检索","评测","部署"]}
+{"id":"agent_007","goal":"总结项目中的安全设计，包括认证、权限和人工审批。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["认证","权限","审批"]}
+{"id":"agent_008","goal":"对比两个文档，指出它们对向量数据库的描述差异。","expected_tools":["list_documents","search_kb","compare_documents","ask_rag","create_report"],"required_keywords":["对比","向量数据库"]}
+{"id":"agent_009","goal":"根据知识库生成一份上线风险清单，并给出缓解措施。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["风险","缓解"]}
+{"id":"agent_010","goal":"总结文档解析流程，并说明失败时如何排查。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["解析","失败","排查"]}
+{"id":"agent_011","goal":"概括 RAG 系统中 sources 字段的作用，并生成示例说明。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["sources","示例"]}
+{"id":"agent_012","goal":"生成一份面向 Agent 岗的项目亮点报告。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["Agent","工具","trace"]}
+{"id":"agent_013","goal":"总结知识库中的 Docker 部署流程并生成操作步骤。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["Docker","步骤"]}
+{"id":"agent_014","goal":"查找知识库中缺失的监控项，并输出补充建议。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["缺失","监控","建议"]}
+{"id":"agent_015","goal":"总结系统如何进行多租户隔离。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["多租户","隔离"]}
+{"id":"agent_016","goal":"对比 RAG 和 Agent 两种能力在项目中的边界。","expected_tools":["list_documents","search_kb","compare_documents","ask_rag","create_report"],"required_keywords":["RAG","Agent","边界"]}
+{"id":"agent_017","goal":"总结当前项目的可观测性指标。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["指标","latency","metrics"]}
+{"id":"agent_018","goal":"生成一份技术债清单，指出哪些模块还需要生产化。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["技术债","生产化"]}
+{"id":"agent_019","goal":"根据知识库生成一份 README 改进建议。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["README","建议"]}
+{"id":"agent_020","goal":"总结 Agent 执行 trace 中应该展示哪些字段。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["trace","工具","耗时"]}
+{"id":"agent_021","goal":"根据部署文档生成报告并发布到外部渠道。","expected_tools":["list_documents","search_kb","ask_rag","create_report","publish_report"],"required_keywords":["报告","发布","外部"]}
+{"id":"agent_022","goal":"根据知识库整理一份权限拒绝场景的测试清单，并说明哪些操作需要审批。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["权限","拒绝","审批"]}
+{"id":"agent_023","goal":"总结 Agent 工具调用失败后应该如何恢复执行，并输出排查步骤。","expected_tools":["list_documents","search_kb","summarize_document","ask_rag","create_report"],"required_keywords":["失败","恢复","步骤"]}
+{"id":"agent_024","goal":"对比当前 RAG eval 和 Agent eval 的指标差异，并生成面试讲解稿。","expected_tools":["list_documents","search_kb","compare_documents","ask_rag","create_report"],"required_keywords":["对比","指标","面试"]}
+{"id":"agent_025","goal":"生成一份面向后端工程师的 Agent API 使用说明，必须包含任务创建、事件流和审批接口。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["API","事件流","审批"]}
+{"id":"agent_026","goal":"总结知识库中关于 Chroma 持久化向量库的设计，并指出测试覆盖点。","expected_tools":["list_documents","search_kb","summarize_document","ask_rag","create_report"],"required_keywords":["Chroma","持久化","测试"]}
+{"id":"agent_027","goal":"根据知识库生成一个 CI regression eval 方案，覆盖 RAG 和 Agent 两条链路。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["CI","RAG","Agent"]}
+{"id":"agent_028","goal":"对比部署文档和 demo 文档，找出一键复现流程中的差异。","expected_tools":["list_documents","search_kb","compare_documents","ask_rag","create_report"],"required_keywords":["对比","demo","部署"]}
+{"id":"agent_029","goal":"概括当前 Agent Runtime 的数据模型，并说明每张表记录什么 trace 信息。","expected_tools":["list_documents","search_kb","summarize_document","ask_rag","create_report"],"required_keywords":["Agent Runtime","数据模型","trace"]}
+{"id":"agent_030","goal":"生成一份知识库审计报告，指出哪些内容缺少来源引用或评测证据。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["审计","来源","评测"]}
+{"id":"agent_031","goal":"根据知识库生成一份外部发送前的安全审批报告，并发送到外部渠道。","expected_tools":["list_documents","search_kb","ask_rag","create_report","publish_report"],"required_keywords":["审批","发送","外部"]}
+{"id":"agent_032","goal":"总结项目中 human-in-the-loop 的设计，并说明为什么写操作要进入 needs_approval。","expected_tools":["list_documents","search_kb","summarize_document","ask_rag","create_report"],"required_keywords":["human-in-the-loop","写操作","needs_approval"]}
+{"id":"agent_033","goal":"生成一份 Agent 岗简历项目 bullet，突出工具调用准确率、引用正确率和 p95 延迟。","expected_tools":["list_documents","search_kb","ask_rag","create_report"],"required_keywords":["工具调用准确率","引用正确率","p95"]}

@@ -212,11 +212,10 @@ Edit `.env` with your configuration. See the Environment Variables Reference bel
 # Create PostgreSQL database
 psql -U postgres -c "CREATE DATABASE smartrag;"
 
-# The application uses SQLAlchemy's create_all() on startup,
-# so tables are created automatically on first run.
-# For production, consider using Alembic migrations:
-pip install alembic
-alembic init alembic
+# Development can use SQLAlchemy create_all() via scripts/init_db.py.
+# Production schema changes should use the bundled Alembic scaffold.
+alembic revision --autogenerate -m "describe change"
+alembic upgrade head
 ```
 
 ### 4. Create Data Directories

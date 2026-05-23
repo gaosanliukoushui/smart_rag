@@ -54,6 +54,14 @@ class ChunkResponse(BaseModel):
     metadata: dict
 
 
+class ChunkDetailResponse(ChunkResponse):
+    """Chunk detail with document context for citation backtracking."""
+
+    document_id: UUID
+    document_title: str
+    knowledge_base_id: UUID
+
+
 class ChunkListResponse(BaseModel):
     """Response schema for chunk list."""
 

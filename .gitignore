@@ -52,10 +52,19 @@ logs/
 *.log
 *.db
 *.sqlite
+temp_*.json
+_test.py
+test_api_flow.py
 
 # Chroma
 chroma/
 chroma_db/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
 
 # Environment
 .env

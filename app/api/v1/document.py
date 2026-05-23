@@ -14,6 +14,7 @@ from app.schemas.document import (
     DocumentListResponse,
     DocumentResponse,
     DocumentPreviewResponse,
+    ChunkDetailResponse,
 )
 from app.schemas.document_update import (
     DocumentReparseResponse,
@@ -30,6 +31,7 @@ from app.config import get_settings
 from app.core.exceptions import DocumentNotFoundError
 from app.core.logging import get_logger
 from app.middleware.rate_limit import limiter
+from app.models.knowledge_base import Chunk, Document
 
 logger = get_logger(__name__)
 
@@ -127,12 +129,23 @@ async def upload_document(
     try:
         embeddings = await embedding_service.embed_batch(texts)
         logger.info(f"[UPLOAD] Generated {len(embeddings)} embeddings for doc {doc.id}")
+        vector_metadata = [
+            {
+                "knowledge_base_id": str(knowledge_base_id),
+                "document_id": str(doc.id),
+                "chunk_id": str(chunk.id),
+                "chunk_index": chunk.chunk_index,
+                "document_title": doc.title,
+            }
+            for chunk in chunks
+        ]
         vector_ids = await vector_store_service.add_vectors_batch(
             texts,
             embeddings,
-            metadata=[{"knowledge_base_id": str(knowledge_base_id), "document_id": str(doc.id)}] * len(texts),
+            metadata=vector_metadata,
         )
-        logger.info(f"[UPLOAD] Stored {len(vector_ids)} vectors, total in store now: {len(vector_store_service._embeddings)}")
+        total_vectors = len(vector_store_service._embeddings) if getattr(vector_store_service, "_embeddings", None) is not None else "persistent"
+        logger.info(f"[UPLOAD] Stored {len(vector_ids)} vectors, total in store now: {total_vectors}")
         for chunk, vector_id in zip(chunks, vector_ids):
             chunk.embedding_id = vector_id
         doc_service.update_status(doc.id, "ready")
@@ -275,6 +288,44 @@ async def preview_document(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Document not found: {document_id}")
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get("/{document_id}/chunks/{chunk_id}", response_model=ChunkDetailResponse)
+async def get_document_chunk(
+    document_id: uuid.UUID,
+    chunk_id: uuid.UUID,
+    tenant: Annotated[Optional[Tenant], Depends(get_current_tenant)] = None,
+    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_active_user)] = None,
+):
+    """Get a single chunk with document context for source backtracking."""
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Tenant not found in token", headers={"WWW-Authenticate": "Bearer"})
+    row = (
+        db.query(Chunk, Document)
+        .join(Document, Chunk.document_id == Document.id)
+        .filter(
+            Chunk.id == chunk_id,
+            Chunk.document_id == document_id,
+            Document.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Chunk not found: {chunk_id}")
+    chunk, document = row
+    if document.knowledge_base.tenant_id != tenant.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Chunk not found: {chunk_id}")
+    return ChunkDetailResponse(
+        id=chunk.id,
+        document_id=document.id,
+        document_title=document.title,
+        knowledge_base_id=document.knowledge_base_id,
+        content=chunk.content,
+        chunk_index=chunk.chunk_index,
+        token_count=chunk.token_count,
+        metadata=chunk.meta or {},
+    )
 
 
 _update_service = DocumentUpdateService()

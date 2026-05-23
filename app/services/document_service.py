@@ -143,9 +143,13 @@ class DocumentService:
         self.db.commit()
 
         if vector_ids:
-            for vid in vector_ids:
-                if vid in _vector_store_service._embeddings:
-                    del _vector_store_service._embeddings[vid]
+            if getattr(_vector_store_service, "_embeddings", None) is not None:
+                for vid in vector_ids:
+                    if vid in _vector_store_service._embeddings:
+                        del _vector_store_service._embeddings[vid]
+            else:
+                # Persistent vector stores are handled by API-level delete before DB deletion.
+                pass
         logger.info("document_deleted", document_id=str(doc_id), vectors_deleted=len(vector_ids))
         return True
 
@@ -216,4 +220,3 @@ class DocumentService:
         kb.document_count = doc_count
         kb.chunk_count = chunk_count
         self.db.flush()
-

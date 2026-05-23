@@ -145,6 +145,7 @@ class HybridRetrievalService:
         query: str,
         top_k: int = 5,
         fusion_method: str = "rrf",
+        knowledge_base_id: Optional[str] = None,
     ) -> List[Tuple[str, float, dict]]:
         """
         Retrieve relevant documents using hybrid search.
@@ -160,7 +161,10 @@ class HybridRetrievalService:
         fetch_k = top_k * 3
 
         vector_results = await self.retrieval_service.retrieve(
-            query, top_k=fetch_k, similarity_threshold=0.0
+            query,
+            top_k=fetch_k,
+            similarity_threshold=0.0,
+            knowledge_base_id=knowledge_base_id,
         )
         bm25_results = self.bm25_retriever.search_with_scores(query, top_k=fetch_k)
 
@@ -183,6 +187,7 @@ class HybridRetrievalService:
         top_k: int = 5,
         final_k: int = 3,
         fusion_method: str = "rrf",
+        knowledge_base_id: Optional[str] = None,
     ) -> List[Tuple[str, float, dict]]:
         """
         Retrieve with reranking step for higher quality results.
@@ -196,7 +201,12 @@ class HybridRetrievalService:
         Returns:
             List of (text, score, metadata) tuples after reranking.
         """
-        candidates = await self.retrieve(query, top_k=top_k, fusion_method=fusion_method)
+        candidates = await self.retrieve(
+            query,
+            top_k=top_k,
+            fusion_method=fusion_method,
+            knowledge_base_id=knowledge_base_id,
+        )
 
         if self.rerank_service is None:
             return candidates[:final_k]

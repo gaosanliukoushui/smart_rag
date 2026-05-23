@@ -1,7 +1,6 @@
 """Chat API endpoints."""
 
 import json
-import time
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, HTTPException, Request, Depends
@@ -11,7 +10,7 @@ from app.api.deps import get_current_active_user, get_current_tenant
 from app.models import User, Tenant
 from app.services.llm_service import LLMService
 from app.services.retrieval_service import RetrievalService
-from app.services.chat_service import ChatService
+from app.services.chat_service import ChatService, _format_document_list_answer, _is_list_query, _list_kb_documents
 from app.services.session_service import get_session_service
 from app.middleware.rate_limit import limiter
 from app.core.logging import get_logger
@@ -65,6 +64,7 @@ async def chat(
         session=session,
         top_k=5,
         stream=False,
+        tenant_id=str(tenant.id),
     )
 
     await _session_service.save_session(session)
@@ -100,12 +100,24 @@ async def chat_stream(
 
             yield {"event": "session", "data": session.id}
 
+            if _is_list_query(chat_request.message):
+                doc_list = await _list_kb_documents(chat_request.knowledge_base_id, tenant_id=str(tenant.id))
+                answer = _format_document_list_answer(doc_list)
+                session.add_message("user", chat_request.message)
+                session.add_message("assistant", answer)
+                await _session_service.save_session(session)
+                yield {"event": "message", "data": answer}
+                yield {"event": "sources", "data": []}
+                yield {"event": "done", "data": ""}
+                return
+
             token_gen, sources, session = await _chat_service.stream_ask(
                 question=chat_request.message,
                 knowledge_base_id=chat_request.knowledge_base_id,
                 session=session,
                 top_k=5,
                 use_rewrite=True,
+                tenant_id=str(tenant.id),
             )
 
             full_response = []

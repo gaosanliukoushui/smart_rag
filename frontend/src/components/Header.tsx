@@ -19,6 +19,7 @@ const navItems = [
   { label: '知识库', path: '/knowledge-bases' },
   { label: '文档管理', path: '/knowledge-bases/:kbId/documents' },
   { label: '智能问答', path: '/knowledge-bases/:kbId/chat' },
+  { label: 'Agent', path: '/agent' },
 ];
 
 function getAvatarColor(username: string): string {

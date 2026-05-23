@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.api.v1 import auth, document, health, knowledge_base, chat
+from app.api.v1 import agent, auth, document, health, knowledge_base, chat
 from app.api.v1 import session as session_router
 from app.api.v1 import users as users_router
 from app.api.v1 import roles as roles_router
@@ -60,16 +60,12 @@ app.include_router(auth.router, prefix=settings.API_V1_PREFIX, tags=["Auth"])
 app.include_router(document.router, prefix=settings.API_V1_PREFIX, tags=["Documents"])
 app.include_router(knowledge_base.router, prefix=settings.API_V1_PREFIX, tags=["KnowledgeBase"])
 app.include_router(chat.router, prefix=settings.API_V1_PREFIX, tags=["Chat"])
+app.include_router(agent.router, prefix=settings.API_V1_PREFIX, tags=["Agent"])
 app.include_router(session_router.router, prefix=settings.API_V1_PREFIX, tags=["Sessions"])
 app.include_router(users_router.router, prefix=settings.API_V1_PREFIX, tags=["Users"])
 app.include_router(roles_router.router, prefix=settings.API_V1_PREFIX, tags=["Roles"])
 app.include_router(tenant_users_router.router, prefix=settings.API_V1_PREFIX, tags=["TenantUsers"])
 app.include_router(metrics_router, tags=["Metrics"])
-
-# Serve frontend static files (Vite build output)
-frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
-if frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 
 
 @app.get("/")
@@ -81,3 +77,9 @@ async def root():
 async def health_check():
     """Root-level health check for load balancers and orchestrators."""
     return {"status": "healthy"}
+
+
+# Serve frontend static files (Vite build output) after explicit API routes.
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")

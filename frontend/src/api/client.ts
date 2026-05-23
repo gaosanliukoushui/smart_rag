@@ -214,6 +214,12 @@ export interface ChatHistoryMessage {
   sources?: Source[];
 }
 
+export interface ChatHistoryResponse {
+  session_id: string;
+  messages: ChatHistoryMessage[];
+  created_at: string;
+}
+
 export interface SessionSummary {
   session_id: string;
   knowledge_base_id: string;
@@ -331,10 +337,100 @@ export const chatApi = {
   },
 
   getHistory: (sessionId: string) =>
-    apiClient.get<ChatHistoryMessage[]>(`/chat/history/${sessionId}`).then((r) => r.data),
+    apiClient.get<ChatHistoryResponse>(`/chat/history/${sessionId}`).then((r) => r.data),
 
   listSessions: (knowledgeBaseId?: string) =>
     apiClient.get<{ sessions: SessionSummary[] }>('/chat/sessions', {
       params: knowledgeBaseId ? { knowledge_base_id: knowledgeBaseId } : undefined,
     }).then((r) => r.data.sessions),
+};
+
+// --- Agent tasks ---
+
+export interface AgentStep {
+  id: string;
+  step_index: number;
+  description: string;
+  tool_name?: string | null;
+  tool_input?: Record<string, unknown> | null;
+  observation?: Record<string, unknown> | null;
+  status: string;
+  latency_ms?: number | null;
+  error?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentToolCall {
+  id: string;
+  step_id?: string | null;
+  tool_name: string;
+  tool_input: Record<string, unknown>;
+  tool_output?: Record<string, unknown> | null;
+  status: string;
+  latency_ms?: number | null;
+  error?: string | null;
+  token_usage?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AgentArtifact {
+  id: string;
+  artifact_type: string;
+  title: string;
+  content: string;
+  meta?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AgentApprovalEvent {
+  id: string;
+  step_id?: string | null;
+  user_id?: string | null;
+  action: string;
+  tool_name?: string | null;
+  note?: string | null;
+  meta?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AgentTask {
+  id: string;
+  knowledge_base_id?: string | null;
+  goal: string;
+  status: string;
+  plan?: Record<string, unknown>[] | null;
+  result?: Record<string, unknown> | null;
+  error?: string | null;
+  retry_count: number;
+  completed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  steps: AgentStep[];
+  tool_calls: AgentToolCall[];
+  artifacts: AgentArtifact[];
+  approval_events: AgentApprovalEvent[];
+}
+
+export interface CreateAgentTaskRequest {
+  goal: string;
+  knowledge_base_id?: string;
+  auto_run?: boolean;
+}
+
+export const agentApi = {
+  createTask: (data: CreateAgentTaskRequest) =>
+    apiClient.post<AgentTask>('/agent/tasks', data).then((r) => r.data),
+
+  listTasks: () =>
+    apiClient.get<{ tasks: AgentTask[]; total: number }>('/agent/tasks').then((r) => r.data.tasks),
+
+  getTask: (id: string) =>
+    apiClient.get<AgentTask>(`/agent/tasks/${id}`).then((r) => r.data),
+
+  approveTask: (id: string, note?: string) =>
+    apiClient.post<AgentTask>(`/agent/tasks/${id}/approve`, { note }).then((r) => r.data),
+
+  rejectTask: (id: string, note?: string) =>
+    apiClient.post<AgentTask>(`/agent/tasks/${id}/reject`, { note }).then((r) => r.data),
 };

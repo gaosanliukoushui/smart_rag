@@ -88,3 +88,27 @@ class TestRetrievalService:
 
         assert len(results) == 1
         assert results[0][0] == "doc A"
+
+    @pytest.mark.asyncio
+    async def test_retrieve_filters_by_knowledge_base(self):
+        """Test retrieval does not cross knowledge-base/tenant boundaries."""
+        from app.services.vector_store_service import VectorStoreService
+
+        mock_embedding = AsyncMock()
+        mock_embedding.embed_query = AsyncMock(return_value=[1.0, 0.0])
+
+        vector_store = VectorStoreService()
+        await vector_store.add_vectors(
+            ["tenant A chunk", "tenant B chunk"],
+            [[1.0, 0.0], [1.0, 0.0]],
+            metadata=[
+                {"knowledge_base_id": "kb-a", "document_id": "doc-a", "chunk_id": "chunk-a"},
+                {"knowledge_base_id": "kb-b", "document_id": "doc-b", "chunk_id": "chunk-b"},
+            ],
+        )
+
+        service = RetrievalService(mock_embedding, vector_store)
+        results = await service.retrieve("same semantic query", top_k=5, knowledge_base_id="kb-a")
+
+        assert len(results) == 1
+        assert results[0][2]["document_id"] == "doc-a"

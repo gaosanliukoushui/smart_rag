@@ -6,6 +6,7 @@ import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import DocumentPage from './pages/DocumentPage';
 import ChatPage, { type ChatPageHandle } from './pages/ChatPage';
 import LoginPage from './pages/LoginPage';
+import AgentTaskPage from './pages/AgentTaskPage';
 
 // Protected route: redirects to /login if not authenticated
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -92,6 +93,22 @@ export default function App() {
               element={
                 <RequireAuth>
                   <ChatPageWrapper chatPageRef={chatPageRef} />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/knowledge-bases/:kbId/agent"
+              element={
+                <RequireAuth>
+                  <AgentTaskPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/agent"
+              element={
+                <RequireAuth>
+                  <AgentTaskPage />
                 </RequireAuth>
               }
             />

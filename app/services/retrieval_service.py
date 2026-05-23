@@ -1,6 +1,7 @@
 """Retrieval service for RAG retrieval operations."""
 
 import asyncio
+import time
 from typing import List, Tuple, Optional
 
 from app.services.embedding_service import EmbeddingService
@@ -52,16 +53,19 @@ class RetrievalService:
         """
         await self._ensure_initialized()
         from app.core.logging import get_logger
+        from app.api.v1.metrics import collector
         logger = get_logger(__name__)
 
-        if not self.vector_store_service._embeddings:
+        if getattr(self.vector_store_service, "_embeddings", None) == {}:
             logger.warning("[RETRIEVE] No vectors in store, skipping retrieval")
             return []
 
         try:
+            embed_start = time.perf_counter()
             query_embedding = await asyncio.wait_for(
                 self.embedding_service.embed_query(query), timeout=30.0
             )
+            collector.record_rag_latency("embedding", (time.perf_counter() - embed_start) * 1000)
         except asyncio.TimeoutError:
             logger.error("[RETRIEVE] Embedding timeout for query: %s", query)
             return []
@@ -70,12 +74,15 @@ class RetrievalService:
             return []
 
         try:
+            retrieval_start = time.perf_counter()
             results = await self.vector_store_service.search(
                 query_embedding,
                 top_k=top_k,
                 threshold=similarity_threshold,
                 knowledge_base_id=knowledge_base_id,
             )
+            collector.record_rag_latency("retrieval", (time.perf_counter() - retrieval_start) * 1000)
+            collector.record_retrieval_result([float(score) for _, score, _ in results])
         except Exception as e:
             logger.error("[RETRIEVE] Search failed: %s", e)
             return []

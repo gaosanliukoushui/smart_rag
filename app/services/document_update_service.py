@@ -97,9 +97,9 @@ class DocumentUpdateService:
 
             # Delete old chunks and their vectors
             old_chunks = db.query(Chunk).filter(Chunk.document_id == document_id).all()
-            old_chunk_ids = [str(c.id) for c in old_chunks if c.embedding_id]
-            if old_chunk_ids:
-                await self.vector_store_service.delete_vectors(old_chunk_ids)
+            old_vector_ids = [c.embedding_id for c in old_chunks if c.embedding_id]
+            if old_vector_ids:
+                await self.vector_store_service.delete_vectors(old_vector_ids)
 
             db.query(Chunk).filter(Chunk.document_id == document_id).delete()
 
@@ -134,10 +134,20 @@ class DocumentUpdateService:
                 logger.exception("embedding_failed", document_id=str(document_id), error=str(e))
                 raise
 
+            vector_metadata = [
+                {
+                    "knowledge_base_id": str(doc.knowledge_base_id),
+                    "document_id": str(doc.id),
+                    "chunk_id": str(chunk.id),
+                    "chunk_index": chunk.chunk_index,
+                    "document_title": doc.title,
+                }
+                for chunk in new_chunk_records
+            ]
             vector_ids = await self.vector_store_service.add_vectors_batch(
                 texts,
                 embeddings,
-                metadata=[{"knowledge_base_id": str(doc.knowledge_base_id), "document_id": str(doc.id)}] * len(texts),
+                metadata=vector_metadata,
             )
 
             # Link embeddings to chunks

@@ -30,6 +30,12 @@ class Settings(BaseSettings):
 
     VECTOR_DB_TYPE: str = "chroma"
     CHROMA_PERSIST_DIR: str = "./data/chroma"
+    RETRIEVAL_MODE: str = "vector"
+    BM25_TOKENIZER: str = "char_ngram"
+    RAG_EVAL_DATASET: str = "evals/qa_set.jsonl"
+    AGENT_PLANNER_MODE: str = "rule"
+    AGENT_PLANNER_MODEL: str = ""
+    AGENT_PLANNER_MAX_STEPS: int = 8
 
     LLM_PROVIDER: str = "deepseek"
     DEEPSEEK_API_KEY: str = ""
