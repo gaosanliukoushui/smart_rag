@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user, get_current_tenant, get_db
 from app.db.session import get_db_context
-from app.models import Tenant, User
+from app.models import AgentTask, Tenant, User
 from app.schemas.agent import (
     AgentApprovalRequest,
     AgentTaskCreate,
@@ -28,6 +28,14 @@ def _run_task_background(task_id: uuid.UUID) -> None:
     """Run an agent task in a fresh DB session after the HTTP response returns."""
     with get_db_context() as background_db:
         AgentService(background_db).run_task(task_id)
+
+
+def _resume_task_background(task_id: uuid.UUID) -> None:
+    """Resume an existing task in a fresh DB session."""
+    with get_db_context() as background_db:
+        task = background_db.get(AgentTask, task_id)
+        if task:
+            AgentService(background_db).run_task(task_id, resume=True)
 
 
 def _require_tenant(tenant: Optional[Tenant]) -> Tenant:
@@ -197,3 +205,72 @@ async def reject_task(
         )
     except ValueError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Agent task not found: {task_id}")
+
+
+@router.post("/tasks/{task_id}/pause", response_model=AgentTaskResponse)
+async def pause_task(
+    task_id: uuid.UUID,
+    payload: AgentApprovalRequest | None = None,
+    tenant: Annotated[Optional[Tenant], Depends(get_current_tenant)] = None,
+    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_active_user)] = None,
+):
+    """Pause a task after the current running tool completes."""
+    tenant = _require_tenant(tenant)
+    try:
+        return AgentService(db).pause_task(task_id, tenant.id, note=payload.note if payload else None)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Agent task not found: {task_id}")
+
+
+@router.post("/tasks/{task_id}/cancel", response_model=AgentTaskResponse)
+async def cancel_task(
+    task_id: uuid.UUID,
+    payload: AgentApprovalRequest | None = None,
+    tenant: Annotated[Optional[Tenant], Depends(get_current_tenant)] = None,
+    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_active_user)] = None,
+):
+    """Cancel a task and mark remaining steps as cancelled."""
+    tenant = _require_tenant(tenant)
+    try:
+        return AgentService(db).cancel_task(task_id, tenant.id, note=payload.note if payload else None)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Agent task not found: {task_id}")
+
+
+@router.post("/tasks/{task_id}/resume", response_model=AgentTaskResponse)
+async def resume_task(
+    task_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    tenant: Annotated[Optional[Tenant], Depends(get_current_tenant)] = None,
+    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_active_user)] = None,
+):
+    """Resume a paused or failed task in the background."""
+    tenant = _require_tenant(tenant)
+    try:
+        task = AgentService(db).resume_task(task_id, tenant.id, run=False)
+        background_tasks.add_task(_resume_task_background, task.id)
+        return task
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Agent task not found: {task_id}")
+
+
+@router.post("/tasks/{task_id}/steps/{step_id}/retry", response_model=AgentTaskResponse)
+async def retry_step(
+    task_id: uuid.UUID,
+    step_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    tenant: Annotated[Optional[Tenant], Depends(get_current_tenant)] = None,
+    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_active_user)] = None,
+):
+    """Retry one step and all following steps in the background."""
+    tenant = _require_tenant(tenant)
+    try:
+        task = AgentService(db).retry_step(task_id, step_id, tenant.id, run=False)
+        background_tasks.add_task(_resume_task_background, task.id)
+        return task
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))

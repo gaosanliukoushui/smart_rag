@@ -433,4 +433,16 @@ export const agentApi = {
 
   rejectTask: (id: string, note?: string) =>
     apiClient.post<AgentTask>(`/agent/tasks/${id}/reject`, { note }).then((r) => r.data),
+
+  pauseTask: (id: string, note?: string) =>
+    apiClient.post<AgentTask>(`/agent/tasks/${id}/pause`, { note }).then((r) => r.data),
+
+  cancelTask: (id: string, note?: string) =>
+    apiClient.post<AgentTask>(`/agent/tasks/${id}/cancel`, { note }).then((r) => r.data),
+
+  resumeTask: (id: string) =>
+    apiClient.post<AgentTask>(`/agent/tasks/${id}/resume`).then((r) => r.data),
+
+  retryStep: (taskId: string, stepId: string) =>
+    apiClient.post<AgentTask>(`/agent/tasks/${taskId}/steps/${stepId}/retry`).then((r) => r.data),
 };

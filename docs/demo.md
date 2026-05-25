@@ -74,9 +74,9 @@ Open `/agent`, select `SmartRAG Demo Knowledge Base`, then submit:
 根据知识库里的部署文档，生成一份上线 checklist，并指出缺失的监控项。
 ```
 
-The page should show the final Markdown report and a trace timeline with every tool call, input/output, status, and latency.
-The trace header also shows planner mode, total tool calls, estimated token usage, and estimated cost.
+The page should show the final Markdown report, polished execution progress, planner mode, total tool calls, estimated token usage, and estimated cost.
 The Sources block links each citation back to its document/chunk endpoint for evidence inspection.
+Use Pause / Resume / Cancel and Retry from here once in the recording to show long-running task recovery without exposing raw internals as the primary UI.
 
 ## 6. Screenshot / GIF Checklist
 
@@ -86,7 +86,7 @@ Capture these screens for README or portfolio use:
 2. Open `SmartRAG Demo Knowledge Base`.
 3. Ask: `SmartRAG 支持哪些检索方式？`
 4. Show the streaming answer and source card with `document_id`, `chunk_id`, score, and rank available in the API payload.
-5. Open `/agent`, run the checklist task, and show the trace timeline.
+5. Open `/agent`, run the checklist task, and show the task workspace.
 6. Open `/metrics` and show RAG plus Agent metrics.
 7. Run `scripts/run_rag_eval.py --compare-modes` and `scripts/run_agent_eval.py` in a terminal beside the browser.
 8. Save the final GIF as `docs/assets/agent-trace-demo.gif` if you want README playback.

@@ -76,9 +76,14 @@ GET  /api/v1/agent/tasks/{id}
 GET  /api/v1/agent/tasks/{id}/events
 POST /api/v1/agent/tasks/{id}/approve
 POST /api/v1/agent/tasks/{id}/reject
+POST /api/v1/agent/tasks/{id}/pause
+POST /api/v1/agent/tasks/{id}/resume
+POST /api/v1/agent/tasks/{id}/cancel
+POST /api/v1/agent/tasks/{id}/steps/{step_id}/retry
 ```
 
 `POST /api/v1/agent/tasks` 默认会立即返回 `task_id`，实际执行交给 FastAPI background task；前端通过轮询/SSE 查看 `pending -> planning -> running -> completed/needs_approval` 状态，长任务不会阻塞 HTTP 请求。
+任务支持暂停、恢复、取消和从指定 step 重新执行。取消后的未执行 step 会标记为 `cancelled`；恢复或 step retry 会重建已完成步骤上下文，避免引用来源在恢复执行后丢失。
 
 Agent 评测：
 
@@ -104,15 +109,21 @@ flowchart LR
     Trace --> Metrics["Prometheus Metrics"]
 ```
 
+详细文档：
+
+- [项目深度文档](docs/project_deep_dive.md)：通读后可了解整体架构、RAG 链路、Agent Runtime、工具系统、评测、观测、部署和技术边界。
+- [简历与面试指南](docs/resume_guide.md)：包含项目标题、简历 bullet、面试讲法和高频追问回答。
+
 Demo 录制建议：
 
 1. 运行 `python scripts/seed_demo.py --mock-embeddings` 准备数据。
 2. 设置 `AGENT_PLANNER_MODE=llm_fallback` 并配置 LLM API Key。
 3. 打开 `/agent`，提交“根据知识库里的部署文档，生成一份上线 checklist，并指出缺失的监控项。”
-4. 展示 planner mode、tool calls、token/cost、trace timeline 和最终 Markdown 报告。
+4. 展示 planner mode、tool calls、token/cost、执行进度和最终 Markdown 报告。
 5. 展示 Sources 区域，点击 chunk 链接回溯到 `/api/v1/documents/{document_id}/chunks/{chunk_id}`。
-6. 再提交“根据部署文档生成报告并发布到外部渠道。”，展示 `needs_approval`、approval event 和 `publish_report`。
-7. 将录制文件放到 `docs/assets/agent-trace-demo.gif` 后，可在 README 使用 `![Agent trace demo](docs/assets/agent-trace-demo.gif)` 展示。
+6. 暂停、恢复或从失败 step retry 一次，展示长任务恢复能力。
+7. 再提交“根据部署文档生成报告并发布到外部渠道。”，展示 `needs_approval`、approval event 和 `publish_report`。
+8. 将录制文件放到 `docs/assets/agent-trace-demo.gif` 后，可在 README 使用 `![Agent trace demo](docs/assets/agent-trace-demo.gif)` 展示。
 
 ## 快速开始
 

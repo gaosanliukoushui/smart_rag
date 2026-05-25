@@ -146,6 +146,67 @@ class AgentService:
         collector.record_agent_task("rejected")
         return self.get_task(task.id, tenant_id)
 
+    def pause_task(self, task_id: uuid.UUID, tenant_id: uuid.UUID, note: str | None = None) -> AgentTask:
+        task = self.get_task(task_id, tenant_id)
+        if task.status in {"completed", "failed", "cancelled"}:
+            return task
+        task.status = "paused"
+        task.result = {**(task.result or {}), "pause_note": note, "paused_at": _utc_now().isoformat()}
+        self.db.commit()
+        collector.record_agent_task("paused")
+        return self.get_task(task.id, tenant_id)
+
+    def cancel_task(self, task_id: uuid.UUID, tenant_id: uuid.UUID, note: str | None = None) -> AgentTask:
+        task = self.get_task(task_id, tenant_id)
+        if task.status in {"completed", "failed", "cancelled"}:
+            return task
+        task.status = "cancelled"
+        task.error = note or "Cancelled by user"
+        task.completed_at = _utc_now()
+        for step in task.steps:
+            if step.status in {"pending", "planning", "running", "needs_approval", "approved"}:
+                step.status = "cancelled"
+                step.error = task.error
+        self.db.commit()
+        collector.record_agent_task("cancelled")
+        return self.get_task(task.id, tenant_id)
+
+    def resume_task(self, task_id: uuid.UUID, tenant_id: uuid.UUID, run: bool = True) -> AgentTask:
+        task = self.get_task(task_id, tenant_id)
+        if task.status not in {"paused", "failed", "pending", "running"}:
+            return task
+        for step in task.steps:
+            if step.status in {"cancelled", "running"}:
+                step.status = "pending"
+                step.error = None
+        task.status = "running"
+        task.error = None
+        task.completed_at = None
+        self.db.commit()
+        if run:
+            self.run_task(task.id, resume=True)
+        return self.get_task(task.id, tenant_id)
+
+    def retry_step(self, task_id: uuid.UUID, step_id: uuid.UUID, tenant_id: uuid.UUID, run: bool = True) -> AgentTask:
+        task = self.get_task(task_id, tenant_id)
+        target = next((step for step in task.steps if step.id == step_id), None)
+        if not target:
+            raise ValueError(f"Agent step not found: {step_id}")
+        for step in task.steps:
+            if step.step_index >= target.step_index:
+                step.status = "pending"
+                step.observation = {}
+                step.error = None
+                step.latency_ms = None
+        task.status = "running"
+        task.error = None
+        task.completed_at = None
+        task.result = {**(task.result or {}), "retried_step_id": str(step_id), "retried_at": _utc_now().isoformat()}
+        self.db.commit()
+        if run:
+            self.run_task(task.id, resume=True)
+        return self.get_task(task.id, tenant_id)
+
     def _first_document_id(self, kb_id: uuid.UUID | None) -> str | None:
         if not kb_id:
             return None
@@ -261,6 +322,10 @@ class AgentService:
         if not task_row:
             raise ValueError(f"Agent task not found: {task_id}")
         task = self.get_task(task_id, tenant_id=task_row.tenant_id)
+        if task.status == "cancelled":
+            return task
+        if task.status == "paused" and not resume:
+            return task
         task.status = "running"
         self.db.commit()
 
@@ -295,6 +360,11 @@ class AgentService:
             self.db.commit()
 
             for step in steps:
+                self.db.refresh(task)
+                if task.status == "cancelled":
+                    return task
+                if task.status == "paused":
+                    return task
                 if resume and step.status == "completed":
                     if step.observation:
                         self._update_context(context, step.tool_name or "", step.observation)
@@ -334,7 +404,16 @@ class AgentService:
                 step.status = "running"
                 self.db.commit()
                 raw_input = dict(step.tool_input or {})
+                raw_input = self._repair_tool_input(step.tool_name, raw_input, task)
                 if step.tool_name == "create_report":
+                    if self._should_stop_for_missing_sources(context):
+                        self._create_failure_artifact(task, "No usable sources were retrieved for this task.")
+                        task.status = "failed"
+                        task.error = "No usable sources were retrieved for this task."
+                        task.completed_at = _utc_now()
+                        self.db.commit()
+                        collector.record_agent_task("failed")
+                        return self.get_task(task.id, task.tenant_id)
                     raw_input = self._fill_report_input(raw_input, context)
                 elif step.tool_name == "publish_report":
                     raw_input = self._fill_publish_input(raw_input, task)
@@ -431,6 +510,52 @@ class AgentService:
         ]
         raw_input["sources"] = context.get("sources", [])[:10]
         return raw_input
+
+    def _should_stop_for_missing_sources(self, context: dict[str, Any]) -> bool:
+        findings = context.get("findings", [])
+        return bool(findings) and not context.get("sources")
+
+    def _create_failure_artifact(self, task: AgentTask, reason: str) -> None:
+        self.db.add(
+            AgentArtifact(
+                task_id=task.id,
+                artifact_type="failure_report",
+                title="Agent Task Needs More Evidence",
+                content=(
+                    "# Agent Task Needs More Evidence\n\n"
+                    f"## Task\n\n{task.goal}\n\n"
+                    f"## Reason\n\n{reason}\n\n"
+                    "## Suggested Recovery\n\n"
+                    "- Add or re-upload relevant documents.\n"
+                    "- Retry the failed retrieval step.\n"
+                    "- Re-run the task after evidence is available.\n"
+                ),
+                meta={"reason": reason},
+            )
+        )
+
+    def _repair_tool_input(self, tool_name: str | None, raw_input: dict[str, Any], task: AgentTask) -> dict[str, Any]:
+        if not tool_name:
+            return raw_input
+        repaired = dict(raw_input)
+        kb_id = str(task.knowledge_base_id) if task.knowledge_base_id else None
+        if kb_id and tool_name in {"search_kb", "list_documents", "ask_rag"}:
+            repaired.setdefault("knowledge_base_id", kb_id)
+        if tool_name == "search_kb":
+            repaired.setdefault("query", task.goal)
+            repaired.setdefault("top_k", 5)
+        elif tool_name == "ask_rag":
+            repaired.setdefault("question", task.goal)
+            repaired.setdefault("top_k", 5)
+        elif tool_name == "list_documents":
+            repaired.setdefault("limit", 20)
+        elif tool_name == "create_report":
+            repaired.setdefault("title", "Agent Task Report")
+            repaired.setdefault("sections", [{"heading": "Task", "content": task.goal}])
+            repaired.setdefault("sources", [])
+        if repaired != raw_input:
+            repaired["repair_reason"] = "missing_required_tool_input"
+        return repaired
 
     def _repair_search_input(self, raw_input: dict[str, Any]) -> dict[str, Any]:
         """Rewrite a failed retrieval query once using a simple keyword fallback."""

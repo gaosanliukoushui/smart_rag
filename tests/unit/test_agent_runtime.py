@@ -133,6 +133,67 @@ def test_agent_tool_permission_denied_for_write_tool(db):
     assert "Permission denied" in task.error
 
 
+def test_agent_task_pause_cancel_resume_and_retry(db):
+    tenant, user, kb = _seed_agent_fixture(db)
+    service = AgentService(db)
+
+    task = service.create_task(
+        goal="总结部署要求",
+        tenant_id=tenant.id,
+        user_id=user.id,
+        knowledge_base_id=kb.id,
+        auto_run=False,
+    )
+    paused = service.pause_task(task.id, tenant.id, note="pause test")
+    assert paused.status == "paused"
+
+    resumed = service.resume_task(task.id, tenant.id)
+    assert resumed.status == "completed"
+    assert resumed.steps
+
+    retried = service.retry_step(resumed.id, resumed.steps[0].id, tenant.id)
+    assert retried.status == "completed"
+    assert retried.result["retried_step_id"] == str(resumed.steps[0].id)
+
+    cancel_task = service.create_task(
+        goal="总结部署要求",
+        tenant_id=tenant.id,
+        user_id=user.id,
+        knowledge_base_id=kb.id,
+        auto_run=False,
+    )
+    cancelled = service.cancel_task(cancel_task.id, tenant.id, note="cancel test")
+    assert cancelled.status == "cancelled"
+    assert cancelled.error == "cancel test"
+
+
+def test_agent_creates_failure_artifact_when_no_sources(db):
+    tenant = Tenant(name="Empty Tenant", slug=f"empty-{uuid.uuid4().hex[:8]}")
+    user = User(
+        username=f"empty-user-{uuid.uuid4().hex[:8]}",
+        email=f"empty-{uuid.uuid4().hex[:8]}@example.com",
+        hashed_password=get_password_hash("password123"),
+    )
+    db.add_all([tenant, user])
+    db.flush()
+    kb = KnowledgeBase(name="Empty KB", description="No docs", tenant_id=tenant.id)
+    db.add(kb)
+    db.commit()
+    service = AgentService(db)
+
+    task = service.create_task(
+        goal="根据知识库生成上线 checklist",
+        tenant_id=tenant.id,
+        user_id=user.id,
+        knowledge_base_id=kb.id,
+        auto_run=True,
+    )
+
+    assert task.status == "failed"
+    assert task.artifacts
+    assert task.artifacts[0].artifact_type == "failure_report"
+
+
 def test_agent_planner_validates_tool_inputs(db):
     tenant, user, kb = _seed_agent_fixture(db)
     _ = tenant, user
